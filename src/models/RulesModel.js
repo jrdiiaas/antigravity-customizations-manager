@@ -13,6 +13,18 @@ class RulesModel {
   }
 
   /**
+   * Resolve o caminho real canônico (seguindo links simbólicos)
+   */
+  getRealPath(filePath) {
+    try {
+      if (fs.existsSync(filePath)) {
+        return fs.realpathSync(filePath);
+      }
+    } catch (_) {}
+    return path.resolve(filePath);
+  }
+
+  /**
    * Extrai título amigável e resumo das primeiras linhas do arquivo de regra
    */
   parseRulePreview(filePath) {
@@ -50,9 +62,9 @@ class RulesModel {
   }
 
   /**
-   * Escaneia uma pasta de regras
+   * Escaneia uma pasta de regras aplicando desduplicação por caminho real
    */
-  scanDir(dirPath, scope) {
+  scanDir(dirPath, scope, seenRealPaths) {
     const rules = [];
     if (!dirPath || !fs.existsSync(dirPath)) return rules;
 
@@ -65,6 +77,14 @@ class RulesModel {
         if (!isMd && !isDisabled) continue;
 
         const fullPath = path.join(dirPath, file);
+        const realPath = this.getRealPath(fullPath);
+
+        // Desduplicação inteligente por link simbólico
+        if (seenRealPaths.has(realPath)) {
+          continue;
+        }
+        seenRealPaths.add(realPath);
+
         const baseName = isDisabled ? file.replace(/\.disabled$/, '') : file;
         const meta = this.parseRulePreview(fullPath);
 
@@ -73,6 +93,7 @@ class RulesModel {
           fileName: file,
           baseName,
           filePath: fullPath,
+          realPath,
           scope,
           enabled: isMd && !isDisabled,
           title: meta.title,
@@ -87,51 +108,62 @@ class RulesModel {
   }
 
   /**
-   * Retorna todas as regras (Globais e de Workspace)
+   * Retorna todas as regras sem duplicidade física (Globais e de Workspace)
    */
   getAllRules() {
     const rules = [];
+    const seenRealPaths = new Set();
 
-    // 1. Regras globais em pasta
-    rules.push(...this.scanDir(this.globalRulesDir, 'global'));
-
-    // 2. Arquivo GEMINI.md global
+    // 1. Arquivo GEMINI.md global
     if (fs.existsSync(this.globalGeminiMd) || fs.existsSync(`${this.globalGeminiMd}.disabled`)) {
       const isEnabled = fs.existsSync(this.globalGeminiMd);
       const targetPath = isEnabled ? this.globalGeminiMd : `${this.globalGeminiMd}.disabled`;
+      const realPath = this.getRealPath(targetPath);
+      seenRealPaths.add(realPath);
+
       const meta = this.parseRulePreview(targetPath);
-      rules.unshift({
+      rules.push({
         id: 'global:GEMINI.md',
         fileName: path.basename(targetPath),
         baseName: 'GEMINI.md',
         filePath: targetPath,
+        realPath,
         scope: 'global',
         enabled: isEnabled,
-        title: 'GEMINI.md Global',
+        title: 'GEMINI.md (Global)',
         snippet: meta.snippet || meta.title
       });
     }
 
-    // 3. Regras de workspace em pasta
+    // 2. Regras globais em pasta ~/.gemini/config/rules
+    rules.push(...this.scanDir(this.globalRulesDir, 'global', seenRealPaths));
+
+    // 3. Regras de workspace em pasta (.agents/rules) - desduplica se apontar para o mesmo symlink
     if (this.workspaceRulesDir) {
-      rules.push(...this.scanDir(this.workspaceRulesDir, 'workspace'));
+      rules.push(...this.scanDir(this.workspaceRulesDir, 'workspace', seenRealPaths));
     }
 
     // 4. Arquivos AGENTS.md / GEMINI.md no root do workspace
     if (this.workspaceAgentsMd && (fs.existsSync(this.workspaceAgentsMd) || fs.existsSync(`${this.workspaceAgentsMd}.disabled`))) {
       const isEnabled = fs.existsSync(this.workspaceAgentsMd);
       const targetPath = isEnabled ? this.workspaceAgentsMd : `${this.workspaceAgentsMd}.disabled`;
-      const meta = this.parseRulePreview(targetPath);
-      rules.push({
-        id: 'workspace:AGENTS.md',
-        fileName: path.basename(targetPath),
-        baseName: 'AGENTS.md',
-        filePath: targetPath,
-        scope: 'workspace',
-        enabled: isEnabled,
-        title: 'AGENTS.md (Workspace)',
-        snippet: meta.snippet || meta.title
-      });
+      const realPath = this.getRealPath(targetPath);
+
+      if (!seenRealPaths.has(realPath)) {
+        seenRealPaths.add(realPath);
+        const meta = this.parseRulePreview(targetPath);
+        rules.push({
+          id: 'workspace:AGENTS.md',
+          fileName: path.basename(targetPath),
+          baseName: 'AGENTS.md',
+          filePath: targetPath,
+          realPath,
+          scope: 'workspace',
+          enabled: isEnabled,
+          title: 'AGENTS.md (Workspace)',
+          snippet: meta.snippet || meta.title
+        });
+      }
     }
 
     return rules;

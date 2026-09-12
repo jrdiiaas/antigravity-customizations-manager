@@ -104,10 +104,19 @@ class SkillsModel {
    * Retorna todas as skills disponíveis (Workspace e Global)
    */
   getAllSkills() {
-    const workspaceSkills = this.scanDirectory(this.workspaceSkillsDir, 'workspace');
+    // Se o diretório de workspace for um link simbólico para o global, usa escopo global diretamente
+    let isSymlinkToGlobal = false;
+    try {
+      if (this.workspaceSkillsDir && fs.existsSync(this.workspaceSkillsDir) && fs.existsSync(this.globalSkillsDir)) {
+        isSymlinkToGlobal = fs.realpathSync(this.workspaceSkillsDir) === fs.realpathSync(this.globalSkillsDir);
+      }
+    } catch (_) {}
+
+    const workspaceScope = isSymlinkToGlobal ? 'global' : 'workspace';
+    const workspaceSkills = this.scanDirectory(this.workspaceSkillsDir, workspaceScope);
     const globalSkills = this.scanDirectory(this.globalSkillsDir, 'global');
 
-    // Combina e desduplica (workspace tem precedência)
+    // Combina e desduplica (workspace tem precedência se for diretório físico real)
     const list = [...workspaceSkills];
     const seenNames = new Set(workspaceSkills.map(s => s.cleanName));
 

@@ -2,7 +2,7 @@
   "name": "antigravity-customizations-manager",
   "displayName": "Gestor de Tokens IA (MCP Servers, Skills e Rules)",
   "description": "Painel lateral visual com botões liga/desliga estilo Mac/iOS para Servidores MCP, Skills e Regras no Antigravity e VS Code, economizando tokens e evitando estouro de contexto.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "escola-sinc",
   "author": {
     "name": "Alexandre Sousa Dias Junior / Escola SINC",

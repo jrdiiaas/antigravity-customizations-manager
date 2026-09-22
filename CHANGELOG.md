@@ -7,7 +7,7 @@ e este projeto adere ao [Semantic Versioning (SemVer)](https://semver.org/lang/p
 
 ---
 
-## [1.1.0] - 2026-09-22
+## [1.1.1] - 2026-09-22
 
 ### Adicionado
 - **Suporte Oficial a Agentes Especialistas:** Implementação do modelo `AgentsModel.js` para varredura e controle dos agentes do ambiente (`.agents/agent/` no workspace e `~/.gemini/config/agent/` global), com extração de metadados via frontmatter YAML (nome, descrição, skills e ferramentas) e chaveamento ativo/inativo.

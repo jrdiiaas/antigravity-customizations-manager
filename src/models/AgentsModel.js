@@ -139,9 +139,17 @@ class AgentsModel {
   }
 
   /**
-   * Retorna todos os agentes únicos disponíveis com desduplicação por nome
+   * Retorna todos os agentes únicos disponíveis com desduplicação por nome e escopo canônico
    */
   getAllAgents() {
+    let isSymlinkToGlobal = false;
+    try {
+      if (this.workspaceAgentsDir && fs.existsSync(this.workspaceAgentsDir) && fs.existsSync(this.globalAgentsDir)) {
+        isSymlinkToGlobal = fs.realpathSync(this.workspaceAgentsDir) === fs.realpathSync(this.globalAgentsDir);
+      }
+    } catch (_) {}
+
+    const workspaceScope = isSymlinkToGlobal ? 'global' : 'workspace';
     const agents = [];
     const seenRealPaths = new Set();
     const seenNames = new Set();
@@ -157,10 +165,10 @@ class AgentsModel {
 
     // 1. Agentes de workspace (.agents/agent e .agents/agents)
     if (this.workspaceAgentsDir) {
-      addUniqueAgents(this.scanDir(this.workspaceAgentsDir, 'workspace', seenRealPaths));
+      addUniqueAgents(this.scanDir(this.workspaceAgentsDir, workspaceScope, seenRealPaths));
     }
     if (this.workspaceAgentsDirAlt) {
-      addUniqueAgents(this.scanDir(this.workspaceAgentsDirAlt, 'workspace', seenRealPaths));
+      addUniqueAgents(this.scanDir(this.workspaceAgentsDirAlt, workspaceScope, seenRealPaths));
     }
 
     // 2. Agentes globais (~/.gemini/config/agent e ~/.gemini/config/agents)

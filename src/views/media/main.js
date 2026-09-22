@@ -138,8 +138,8 @@
       return `
       <div class="item-row">
         <div class="item-info">
-          <div class="item-top">
-            <span class="item-name" title="${escapeHtml(server.name)}">${escapeHtml(server.name)}</span>
+          <div class="item-name" title="${escapeHtml(server.name)}">${escapeHtml(server.name)}</div>
+          <div class="item-tags">
             <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
           </div>
           <div class="item-desc" title="${escapeHtml(server.command + ' ' + server.args)}">
@@ -190,8 +190,8 @@
       return `
       <div class="item-row">
         <div class="item-info">
-          <div class="item-top">
-            <span class="item-name" title="${escapeHtml(skill.name)}">${escapeHtml(skill.name)}</span>
+          <div class="item-name" title="${escapeHtml(skill.name)}">${escapeHtml(skill.name)}</div>
+          <div class="item-tags">
             <span class="tag-scope ${scopeClass}">${escapeHtml(scopeLabel)}</span>
           </div>
           <div class="item-desc" title="${escapeHtml(skill.description)}">${escapeHtml(skill.description)}</div>
@@ -238,16 +238,17 @@
     agentsListEl.innerHTML = filtered.map(agent => {
       const scopeLabel = agent.scope === 'workspace' ? 'LOCAL' : 'GLOBAL';
       const scopeClass = agent.scope === 'workspace' ? 'workspace' : 'global';
-      const skillsDesc = agent.skills && agent.skills.length > 0 ? ` [Skills: ${agent.skills.slice(0, 3).join(', ')}${agent.skills.length > 3 ? '...' : ''}]` : '';
+      const skillsCount = agent.skills && agent.skills.length > 0 ? `<span class="tag-meta" title="Skills: ${escapeHtml(agent.skills.join(', '))}">${agent.skills.length} skills</span>` : '';
       return `
       <div class="item-row">
         <div class="item-info">
-          <div class="item-top">
-            <span class="item-name" title="${escapeHtml(agent.name)}">${escapeHtml(agent.name)}</span>
+          <div class="item-name" title="${escapeHtml(agent.name)}">${escapeHtml(agent.name)}</div>
+          <div class="item-tags">
             <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
+            ${skillsCount}
           </div>
-          <div class="item-desc" title="${escapeHtml(agent.description + skillsDesc)}">
-            ${escapeHtml(agent.description)}${escapeHtml(skillsDesc)}
+          <div class="item-desc" title="${escapeHtml(agent.description)}">
+            ${escapeHtml(agent.description)}
           </div>
         </div>
         <label class="switch">
@@ -294,8 +295,8 @@
       return `
       <div class="item-row">
         <div class="item-info">
-          <div class="item-top">
-            <span class="item-name" title="${escapeHtml(rule.title)}">${escapeHtml(rule.title)}</span>
+          <div class="item-name" title="${escapeHtml(rule.title)}">${escapeHtml(rule.title)}</div>
+          <div class="item-tags">
             <span class="tag-filename" title="Arquivo: ${escapeHtml(rule.baseName)}">${escapeHtml(rule.baseName)}</span>
             <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
           </div>

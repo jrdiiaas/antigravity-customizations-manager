@@ -10,17 +10,19 @@ e este projeto adere ao [Semantic Versioning (SemVer)](https://semver.org/lang/p
 ## [1.1.0] - 2026-09-22
 
 ### Adicionado
-- **Suporte Oficial a Agentes Especialistas:** Implementação do modelo `AgentsModel.js` para varredura e gerenciamento dos 20 agentes autônomos do AG-Kit (`.agents/agent/` e `.agents/agents/`), com extração de metadados em YAML frontmatter e chaveamento ativo/inativo.
-- **Seção e Accordion Dedicado para Agentes:** Separação entre a seção de Skills (`🧠`) e a nova seção de Agentes Especialistas (`🤖`) na interface visual da Webview.
-- **Detecção de Skills de Plugins:** O `SkillsModel.js` agora identifica recursivamente skills embutidas em pacotes de plugins (`.agents/plugins/*/skills`), rotulando-as com o badge visual `PLUGIN`.
-- **Identificador Físico de Arquivo em Regras:** Exibição do nome de arquivo em disco como badge (ex.: `[sinc-rules.md]`, `[core-protocol.md]`) ao lado do título da regra para evitar ambiguidades visuais.
+- **Suporte Oficial a Agentes Especialistas:** Implementação do modelo `AgentsModel.js` para varredura e controle dos agentes do ambiente (`.agents/agent/` no workspace e `~/.gemini/config/agent/` global), com extração de metadados via frontmatter YAML (nome, descrição, skills e ferramentas) e chaveamento ativo/inativo.
+- **Seção e Accordion Dedicado para Agentes:** Separação visual entre a seção de Skills (`🧠`) e a nova seção de Agentes Especialistas (`🤖`) no painel da Webview, com contadores independentes.
+- **Detecção de Skills em Plugins:** O `SkillsModel.js` agora identifica recursivamente skills embutidas em pacotes de plugins (`.agents/plugins/*/skills`), rotulando-as com badge identificador de plugin.
+- **Identificador Físico de Arquivo em Regras:** Exibição do nome de arquivo em disco como badge ao lado do título da regra, permitindo saber exatamente qual arquivo Markdown corresponde a cada diretriz.
 
 ### Modificado
-- **Cálculo Abrangente de Token Budget:** `ContextBudgetModel.js` atualizado para incorporar o impacto no prompt de sistema tanto dos Agentes Especialistas quanto das novas Skills de Plugins.
-- **Busca Global Multimódulo:** O campo de busca em tempo real agora cobre de forma integrada Servidores MCP, Skills, Agentes Especialistas e Regras (por título, nome de arquivo, comando e descrição).
+- **Refatoração Visual de Metadados e Tags (Layout de Lista):** Reposicionamento das tags e badges para uma linha dedicada logo abaixo do título de cada item, eliminando a disputa de espaço horizontal e truncamentos em painéis laterais estreitos.
+- **Resolução Canônica de Escopo para Agentes:** O modelo `AgentsModel.js` agora verifica links simbólicos (`symlinks`), garantindo que diretórios de workspace apontando para diretórios globais sejam rotulados fielmente com o escopo correspondente.
+- **Cálculo Abrangente de Token Budget:** `ContextBudgetModel.js` atualizado para incorporar o impacto estimado no prompt de sistema de todos os Agentes Especialistas e Skills de Plugins ativos.
+- **Busca Global Multimódulo:** O campo de busca em tempo real agora pesquisa simultaneamente Servidores MCP, Skills, Agentes Especialistas e Regras (por título, nome de arquivo, comando e descrição).
 
 ### Corrigido
-- **Visibilidade Direta de `sinc-rules.md`:** Resolução da confusão de identificação em que a regra constava apenas sob seu título Markdown ("Diretrizes e Convenções Escola SINC"), permitindo agora visualizar e buscar explicitamente pelo arquivo `sinc-rules.md`.
+- **Ambiguidade na Identificação de Regras:** Correção do comportamento que exibia exclusivamente o cabeçalho `#` do arquivo Markdown, permitindo agora visualizar e buscar o nome real do arquivo no disco.
 
 ---
 

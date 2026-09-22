@@ -7,6 +7,23 @@ e este projeto adere ao [Semantic Versioning (SemVer)](https://semver.org/lang/p
 
 ---
 
+## [1.1.0] - 2026-09-22
+
+### Adicionado
+- **Suporte Oficial a Agentes Especialistas:** Implementação do modelo `AgentsModel.js` para varredura e gerenciamento dos 20 agentes autônomos do AG-Kit (`.agents/agent/` e `.agents/agents/`), com extração de metadados em YAML frontmatter e chaveamento ativo/inativo.
+- **Seção e Accordion Dedicado para Agentes:** Separação entre a seção de Skills (`🧠`) e a nova seção de Agentes Especialistas (`🤖`) na interface visual da Webview.
+- **Detecção de Skills de Plugins:** O `SkillsModel.js` agora identifica recursivamente skills embutidas em pacotes de plugins (`.agents/plugins/*/skills`), rotulando-as com o badge visual `PLUGIN`.
+- **Identificador Físico de Arquivo em Regras:** Exibição do nome de arquivo em disco como badge (ex.: `[sinc-rules.md]`, `[core-protocol.md]`) ao lado do título da regra para evitar ambiguidades visuais.
+
+### Modificado
+- **Cálculo Abrangente de Token Budget:** `ContextBudgetModel.js` atualizado para incorporar o impacto no prompt de sistema tanto dos Agentes Especialistas quanto das novas Skills de Plugins.
+- **Busca Global Multimódulo:** O campo de busca em tempo real agora cobre de forma integrada Servidores MCP, Skills, Agentes Especialistas e Regras (por título, nome de arquivo, comando e descrição).
+
+### Corrigido
+- **Visibilidade Direta de `sinc-rules.md`:** Resolução da confusão de identificação em que a regra constava apenas sob seu título Markdown ("Diretrizes e Convenções Escola SINC"), permitindo agora visualizar e buscar explicitamente pelo arquivo `sinc-rules.md`.
+
+---
+
 ## [1.0.2] - 2026-09-12
 
 ### Adicionado

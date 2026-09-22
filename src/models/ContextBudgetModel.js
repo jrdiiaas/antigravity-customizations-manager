@@ -6,7 +6,7 @@ class ContextBudgetModel {
   /**
    * Calcula o consumo estimado de tokens para cada categoria
    */
-  static calculateStats(mcpServers, skills, rules) {
+  static calculateStats(mcpServers, skills, rules, agents = []) {
     let rulesTokens = 0;
     let activeRulesCount = 0;
 
@@ -32,18 +32,28 @@ class ContextBudgetModel {
       }
     }
 
+    let agentsTokens = 0;
+    let activeAgentsCount = 0;
+    for (const agent of agents) {
+      if (agent.enabled) {
+        activeAgentsCount++;
+        // Cada agente tem declaração de persona e lista de skills associadas (~200 a 280 tokens)
+        const descLength = (agent.description || '').length;
+        agentsTokens += Math.round(descLength / 3.8) + 80;
+      }
+    }
+
     let mcpTokens = 0;
     let activeMcpCount = 0;
     for (const server of mcpServers) {
       if (server.enabled) {
         activeMcpCount++;
         // Servidores MCP com múltiplas ferramentas consomem ~350 a 800 tokens por ferramenta
-        // Para estimativa calibrada baseada nos dados do Antigravity:
         mcpTokens += 280;
       }
     }
 
-    const totalTokens = rulesTokens + skillsTokens + mcpTokens;
+    const totalTokens = rulesTokens + skillsTokens + agentsTokens + mcpTokens;
     const percentage = Math.min(100, Math.round((totalTokens / this.BUDGET_LIMIT) * 100));
 
     let status = 'healthy';
@@ -74,6 +84,12 @@ class ContextBudgetModel {
           active: activeSkillsCount,
           total: skills.length,
           pct: Math.round((skillsTokens / (totalTokens || 1)) * 100)
+        },
+        agents: {
+          tokens: agentsTokens,
+          active: activeAgentsCount,
+          total: agents.length,
+          pct: Math.round((agentsTokens / (totalTokens || 1)) * 100)
         },
         mcp: {
           tokens: mcpTokens,

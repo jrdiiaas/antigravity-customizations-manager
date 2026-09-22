@@ -40,7 +40,7 @@ class WebviewHtml {
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
       </svg>
-      <input type="text" id="search-input" class="search-input" placeholder="Buscar MCP, Skill ou Regra...">
+      <input type="text" id="search-input" class="search-input" placeholder="Buscar MCP, Skill, Agente ou Regra...">
     </div>
 
     <!-- Ações Rápidas -->
@@ -78,7 +78,7 @@ class WebviewHtml {
     <div class="accordion-header">
       <div class="accordion-title-area">
         <span class="accordion-icon">🧠</span>
-        <span class="accordion-title">Skills & Agentes</span>
+        <span class="accordion-title">Skills</span>
       </div>
       <div class="accordion-meta">
         <span id="skills-badge" class="count-badge">0/0</span>
@@ -92,7 +92,26 @@ class WebviewHtml {
     </div>
   </div>
 
-  <!-- Seção 3: Regras (Rules) -->
+  <!-- Seção 3: Agentes Especialistas -->
+  <div class="accordion-section" data-section="agents">
+    <div class="accordion-header">
+      <div class="accordion-title-area">
+        <span class="accordion-icon">🤖</span>
+        <span class="accordion-title">Agentes Especialistas</span>
+      </div>
+      <div class="accordion-meta">
+        <span id="agents-badge" class="count-badge">0/0</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+    </div>
+    <div class="accordion-body">
+      <div id="agents-list">Carregando agentes...</div>
+    </div>
+  </div>
+
+  <!-- Seção 4: Regras & Instruções -->
   <div class="accordion-section" data-section="rules">
     <div class="accordion-header">
       <div class="accordion-title-area">

@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const McpModel = require('../models/McpModel');
 const SkillsModel = require('../models/SkillsModel');
+const AgentsModel = require('../models/AgentsModel');
 const RulesModel = require('../models/RulesModel');
 const ContextBudgetModel = require('../models/ContextBudgetModel');
 const WebviewHtml = require('../views/WebviewHtml');
@@ -13,6 +14,7 @@ class CustomizationWebviewController {
 
     this.mcpModel = new McpModel(this.workspaceRoot);
     this.skillsModel = new SkillsModel(this.workspaceRoot);
+    this.agentsModel = new AgentsModel(this.workspaceRoot);
     this.rulesModel = new RulesModel(this.workspaceRoot);
 
     this.setupWatchers();
@@ -58,6 +60,11 @@ class CustomizationWebviewController {
             await this.refresh();
             break;
 
+          case 'toggleAgent':
+            this.agentsModel.toggleAgent(data.agent, data.enabled);
+            await this.refresh();
+            break;
+
           case 'toggleRule':
             this.rulesModel.toggleRule(data.rule, data.enabled);
             await this.refresh();
@@ -75,13 +82,15 @@ class CustomizationWebviewController {
     try {
       const mcpServers = this.mcpModel.getAllServers();
       const skills = this.skillsModel.getAllSkills();
+      const agents = this.agentsModel.getAllAgents();
       const rules = this.rulesModel.getAllRules();
-      const stats = ContextBudgetModel.calculateStats(mcpServers, skills, rules);
+      const stats = ContextBudgetModel.calculateStats(mcpServers, skills, rules, agents);
 
       await this.view.webview.postMessage({
         type: 'updateData',
         mcpServers,
         skills,
+        agents,
         rules,
         stats
       });

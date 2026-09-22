@@ -5,12 +5,14 @@
   let state = {
     mcpServers: [],
     skills: [],
+    agents: [],
     rules: [],
     stats: null,
     searchQuery: '',
     openSections: {
       mcp: true,
       skills: false,
+      agents: false,
       rules: false
     }
   };
@@ -26,6 +28,8 @@
   const mcpBadgeEl = document.getElementById('mcp-badge');
   const skillsListEl = document.getElementById('skills-list');
   const skillsBadgeEl = document.getElementById('skills-badge');
+  const agentsListEl = document.getElementById('agents-list');
+  const agentsBadgeEl = document.getElementById('agents-badge');
   const rulesListEl = document.getElementById('rules-list');
   const rulesBadgeEl = document.getElementById('rules-badge');
 
@@ -61,6 +65,7 @@
       case 'updateData':
         state.mcpServers = message.mcpServers || [];
         state.skills = message.skills || [];
+        state.agents = message.agents || [];
         state.rules = message.rules || [];
         state.stats = message.stats || null;
         updateUI();
@@ -88,19 +93,31 @@
     progressFillEl.className = `progress-fill ${status}`;
 
     // Badges dos cabeçalhos
-    mcpBadgeEl.textContent = `${breakdown.mcp.active}/${breakdown.mcp.total}`;
-    mcpBadgeEl.className = `count-badge ${breakdown.mcp.active > 0 ? 'active' : ''}`;
+    if (mcpBadgeEl && breakdown.mcp) {
+      mcpBadgeEl.textContent = `${breakdown.mcp.active}/${breakdown.mcp.total}`;
+      mcpBadgeEl.className = `count-badge ${breakdown.mcp.active > 0 ? 'active' : ''}`;
+    }
 
-    skillsBadgeEl.textContent = `${breakdown.skills.active}/${breakdown.skills.total}`;
-    skillsBadgeEl.className = `count-badge ${breakdown.skills.active > 0 ? 'active' : ''}`;
+    if (skillsBadgeEl && breakdown.skills) {
+      skillsBadgeEl.textContent = `${breakdown.skills.active}/${breakdown.skills.total}`;
+      skillsBadgeEl.className = `count-badge ${breakdown.skills.active > 0 ? 'active' : ''}`;
+    }
 
-    rulesBadgeEl.textContent = `${breakdown.rules.active}/${breakdown.rules.total}`;
-    rulesBadgeEl.className = `count-badge ${breakdown.rules.active > 0 ? 'active' : ''}`;
+    if (agentsBadgeEl && breakdown.agents) {
+      agentsBadgeEl.textContent = `${breakdown.agents.active}/${breakdown.agents.total}`;
+      agentsBadgeEl.className = `count-badge ${breakdown.agents.active > 0 ? 'active' : ''}`;
+    }
+
+    if (rulesBadgeEl && breakdown.rules) {
+      rulesBadgeEl.textContent = `${breakdown.rules.active}/${breakdown.rules.total}`;
+      rulesBadgeEl.className = `count-badge ${breakdown.rules.active > 0 ? 'active' : ''}`;
+    }
   }
 
   function renderLists() {
     renderMcpList();
     renderSkillsList();
+    renderAgentsList();
     renderRulesList();
   }
 
@@ -155,7 +172,11 @@
   function renderSkillsList() {
     const query = state.searchQuery;
     const filtered = state.skills.filter(s =>
-      !query || s.name.toLowerCase().includes(query) || (s.description && s.description.toLowerCase().includes(query))
+      !query ||
+      s.name.toLowerCase().includes(query) ||
+      s.cleanName.toLowerCase().includes(query) ||
+      (s.pluginName && s.pluginName.toLowerCase().includes(query)) ||
+      (s.description && s.description.toLowerCase().includes(query))
     );
 
     if (filtered.length === 0) {
@@ -164,14 +185,14 @@
     }
 
     skillsListEl.innerHTML = filtered.map(skill => {
-      const scopeLabel = skill.scope === 'workspace' ? 'LOCAL' : 'GLOBAL';
-      const scopeClass = skill.scope === 'workspace' ? 'workspace' : 'global';
+      const scopeLabel = skill.isPlugin ? `PLUGIN: ${skill.pluginName}` : (skill.scope === 'workspace' ? 'LOCAL' : 'GLOBAL');
+      const scopeClass = skill.isPlugin ? 'plugin' : (skill.scope === 'workspace' ? 'workspace' : 'global');
       return `
       <div class="item-row">
         <div class="item-info">
           <div class="item-top">
             <span class="item-name" title="${escapeHtml(skill.name)}">${escapeHtml(skill.name)}</span>
-            <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
+            <span class="tag-scope ${scopeClass}">${escapeHtml(scopeLabel)}</span>
           </div>
           <div class="item-desc" title="${escapeHtml(skill.description)}">${escapeHtml(skill.description)}</div>
         </div>
@@ -199,10 +220,67 @@
     });
   }
 
+  function renderAgentsList() {
+    const query = state.searchQuery;
+    const filtered = state.agents.filter(a =>
+      !query ||
+      a.name.toLowerCase().includes(query) ||
+      a.cleanName.toLowerCase().includes(query) ||
+      (a.description && a.description.toLowerCase().includes(query)) ||
+      (a.skills && a.skills.some(s => s.toLowerCase().includes(query)))
+    );
+
+    if (filtered.length === 0) {
+      agentsListEl.innerHTML = `<div class="empty-state">Nenhum agente encontrado</div>`;
+      return;
+    }
+
+    agentsListEl.innerHTML = filtered.map(agent => {
+      const scopeLabel = agent.scope === 'workspace' ? 'LOCAL' : 'GLOBAL';
+      const scopeClass = agent.scope === 'workspace' ? 'workspace' : 'global';
+      const skillsDesc = agent.skills && agent.skills.length > 0 ? ` [Skills: ${agent.skills.slice(0, 3).join(', ')}${agent.skills.length > 3 ? '...' : ''}]` : '';
+      return `
+      <div class="item-row">
+        <div class="item-info">
+          <div class="item-top">
+            <span class="item-name" title="${escapeHtml(agent.name)}">${escapeHtml(agent.name)}</span>
+            <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
+          </div>
+          <div class="item-desc" title="${escapeHtml(agent.description + skillsDesc)}">
+            ${escapeHtml(agent.description)}${escapeHtml(skillsDesc)}
+          </div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" data-type="agent" data-id="${escapeHtml(agent.id)}" ${agent.enabled ? 'checked' : ''}>
+          <span class="slider"></span>
+        </label>
+      </div>
+    `;
+    }).join('');
+
+    agentsListEl.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const id = e.target.dataset.id;
+        const enabled = e.target.checked;
+        const agent = state.agents.find(a => a.id === id);
+        if (agent) {
+          vscode.postMessage({
+            command: 'toggleAgent',
+            agent,
+            enabled
+          });
+        }
+      });
+    });
+  }
+
   function renderRulesList() {
     const query = state.searchQuery;
     const filtered = state.rules.filter(r =>
-      !query || r.title.toLowerCase().includes(query) || r.baseName.toLowerCase().includes(query) || (r.snippet && r.snippet.toLowerCase().includes(query))
+      !query ||
+      r.title.toLowerCase().includes(query) ||
+      r.baseName.toLowerCase().includes(query) ||
+      (r.snippet && r.snippet.toLowerCase().includes(query))
     );
 
     if (filtered.length === 0) {
@@ -218,6 +296,7 @@
         <div class="item-info">
           <div class="item-top">
             <span class="item-name" title="${escapeHtml(rule.title)}">${escapeHtml(rule.title)}</span>
+            <span class="tag-filename" title="Arquivo: ${escapeHtml(rule.baseName)}">${escapeHtml(rule.baseName)}</span>
             <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
           </div>
           <div class="item-desc" title="${escapeHtml(rule.snippet)}">${escapeHtml(rule.snippet)}</div>

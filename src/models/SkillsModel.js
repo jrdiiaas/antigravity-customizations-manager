@@ -7,6 +7,8 @@ class SkillsModel {
     this.workspaceRoot = workspaceRoot || '';
     this.globalSkillsDir = path.join(os.homedir(), '.gemini', 'config', 'skills');
     this.workspaceSkillsDir = this.workspaceRoot ? path.join(this.workspaceRoot, '.agents', 'skills') : '';
+    this.workspacePluginsDir = this.workspaceRoot ? path.join(this.workspaceRoot, '.agents', 'plugins') : '';
+    this.globalPluginsDir = path.join(os.homedir(), '.gemini', 'config', 'plugins');
   }
 
   /**
@@ -46,7 +48,7 @@ class SkillsModel {
   /**
    * Varre um diretório de skills e retorna os objetos formatados
    */
-  scanDirectory(baseDir, scope) {
+  scanDirectory(baseDir, scope, pluginName = null) {
     const skills = [];
     if (!baseDir || !fs.existsSync(baseDir)) {
       return skills;
@@ -81,14 +83,17 @@ class SkillsModel {
         }
 
         const meta = this.parseSkillMetadata(targetMdPath);
+        const isPlugin = Boolean(pluginName);
 
         skills.push({
-          id: `${scope}:${cleanName}`,
+          id: isPlugin ? `${scope}:${pluginName}:${cleanName}` : `${scope}:${cleanName}`,
           name: meta.name || cleanName,
           cleanName,
           folderName,
           dirPath: fullDirPath,
           scope,
+          isPlugin,
+          pluginName: pluginName || '',
           enabled: isEnabled,
           description: meta.description
         });
@@ -101,10 +106,33 @@ class SkillsModel {
   }
 
   /**
-   * Retorna todas as skills disponíveis (Workspace e Global)
+   * Varre skills contidas em pastas de plugins (.agents/plugins/[nome]/skills)
+   */
+  scanPluginSkills(pluginsDir, scope) {
+    const skills = [];
+    if (!pluginsDir || !fs.existsSync(pluginsDir)) return skills;
+
+    try {
+      const plugins = fs.readdirSync(pluginsDir, { withFileTypes: true });
+      for (const plugin of plugins) {
+        if (!plugin.isDirectory()) continue;
+        const pluginName = plugin.name;
+        const pluginSkillsDir = path.join(pluginsDir, pluginName, 'skills');
+        if (fs.existsSync(pluginSkillsDir)) {
+          const pluginSkills = this.scanDirectory(pluginSkillsDir, scope, pluginName);
+          skills.push(...pluginSkills);
+        }
+      }
+    } catch (err) {
+      console.error(`[SkillsModel] Erro ao escanear plugins em ${pluginsDir}:`, err.message);
+    }
+    return skills;
+  }
+
+  /**
+   * Retorna todas as skills disponíveis (Workspace, Global e Plugins)
    */
   getAllSkills() {
-    // Se o diretório de workspace for um link simbólico para o global, usa escopo global diretamente
     let isSymlinkToGlobal = false;
     try {
       if (this.workspaceSkillsDir && fs.existsSync(this.workspaceSkillsDir) && fs.existsSync(this.globalSkillsDir)) {
@@ -116,13 +144,25 @@ class SkillsModel {
     const workspaceSkills = this.scanDirectory(this.workspaceSkillsDir, workspaceScope);
     const globalSkills = this.scanDirectory(this.globalSkillsDir, 'global');
 
-    // Combina e desduplica (workspace tem precedência se for diretório físico real)
-    const list = [...workspaceSkills];
-    const seenNames = new Set(workspaceSkills.map(s => s.cleanName));
+    // Skills de Plugins
+    const workspacePluginSkills = this.scanPluginSkills(this.workspacePluginsDir, workspaceScope);
+    const globalPluginSkills = isSymlinkToGlobal ? [] : this.scanPluginSkills(this.globalPluginsDir, 'global');
+
+    // Combina e desduplica
+    const list = [...workspaceSkills, ...workspacePluginSkills];
+    const seenNames = new Set(list.map(s => s.cleanName));
 
     for (const gs of globalSkills) {
       if (!seenNames.has(gs.cleanName)) {
         list.push(gs);
+        seenNames.add(gs.cleanName);
+      }
+    }
+
+    for (const gps of globalPluginSkills) {
+      if (!seenNames.has(gps.cleanName)) {
+        list.push(gps);
+        seenNames.add(gps.cleanName);
       }
     }
 

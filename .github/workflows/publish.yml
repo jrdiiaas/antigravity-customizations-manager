@@ -29,7 +29,7 @@ jobs:
           fi
 
       - name: Package Extension (.vsix)
-        run: npx --yes @vscode/vsce package --no-git-tag-version
+        run: npx --yes @vscode/vsce package --no-git-tag-version --out package.vsix
 
       - name: Publish to Open VSX Registry
         env:
@@ -39,4 +39,4 @@ jobs:
             echo "Error: OVSX_PAT secret is not defined in GitHub repository secrets!"
             exit 1
           fi
-          npx --yes ovsx publish *.vsix -p "$OVSX_PAT"
+          npx --yes ovsx publish package.vsix -p "$OVSX_PAT"

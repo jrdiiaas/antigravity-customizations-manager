@@ -26,10 +26,13 @@
   const searchInputEl = document.getElementById('search-input');
 
   const quotaCardEl = document.getElementById('model-quota-card');
-  const quotaUsedEl = document.getElementById('quota-used');
-  const quotaLimitEl = document.getElementById('quota-limit');
-  const quotaProgressFillEl = document.getElementById('quota-progress-fill');
-  const quotaStatusTextEl = document.getElementById('quota-status-text');
+  const quotaWeeklyDescEl = document.getElementById('quota-weekly-desc');
+  const quotaWeeklyPercentEl = document.getElementById('quota-weekly-percentage');
+  const quotaWeeklyRingEl = document.getElementById('quota-weekly-ring');
+  
+  const quotaFiveHourDescEl = document.getElementById('quota-fivehour-desc');
+  const quotaFiveHourPercentEl = document.getElementById('quota-fivehour-percentage');
+  const quotaFiveHourRingEl = document.getElementById('quota-fivehour-ring');
 
   const mcpListEl = document.getElementById('mcp-list');
   const mcpBadgeEl = document.getElementById('mcp-badge');
@@ -93,26 +96,33 @@
   function renderQuota() {
     if (!quotaCardEl) return;
     
-    if (!state.quota) {
-      quotaStatusTextEl.textContent = 'Erro ou métrica indisponível.';
+    if (!state.quota || !state.quota.weekly) {
+      if (quotaWeeklyDescEl) quotaWeeklyDescEl.textContent = 'Métrica indisponível.';
+      if (quotaFiveHourDescEl) quotaFiveHourDescEl.textContent = 'Métrica indisponível.';
       return;
     }
     
-    const { used, limit, percent } = state.quota;
-    quotaUsedEl.textContent = Number(used).toLocaleString('pt-BR');
-    quotaLimitEl.textContent = Number(limit).toLocaleString('pt-BR');
-    quotaProgressFillEl.style.width = `${percent}%`;
-    
-    if (percent < 50) {
-      quotaProgressFillEl.style.background = '#22c55e'; // Verde
-      quotaStatusTextEl.textContent = 'Consumo saudável.';
-    } else if (percent < 85) {
-      quotaProgressFillEl.style.background = '#eab308'; // Amarelo
-      quotaStatusTextEl.textContent = 'Consumo em alerta.';
-    } else {
-      quotaProgressFillEl.style.background = '#ef4444'; // Vermelho
-      quotaStatusTextEl.textContent = 'Próximo do limite de bloqueio.';
-    }
+    // Helper para preencher os anéis
+    const updateRing = (percentEl, ringEl, descEl, data) => {
+      const remaining = data.remaining || 0;
+      percentEl.textContent = `${remaining}%`;
+      descEl.textContent = data.desc || '';
+      
+      // O dasharray é 100. stroke-dasharray = "preenchimento, espaco"
+      ringEl.setAttribute('stroke-dasharray', `${remaining}, 100`);
+      
+      // Ajuste de cores baseado no remanescente
+      if (remaining > 50) {
+        ringEl.style.stroke = '#4ade80'; // Verde
+      } else if (remaining > 15) {
+        ringEl.style.stroke = '#fbbf24'; // Amarelo
+      } else {
+        ringEl.style.stroke = '#ef4444'; // Vermelho
+      }
+    };
+
+    updateRing(quotaWeeklyPercentEl, quotaWeeklyRingEl, quotaWeeklyDescEl, state.quota.weekly);
+    updateRing(quotaFiveHourPercentEl, quotaFiveHourRingEl, quotaFiveHourDescEl, state.quota.fiveHour);
   }
 
   function renderStats() {

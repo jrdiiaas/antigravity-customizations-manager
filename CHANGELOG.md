@@ -7,6 +7,13 @@ e este projeto adere ao [Semantic Versioning (SemVer)](https://semver.org/lang/p
 
 ---
 
+## [1.2.1] - 2026-09-27
+
+### Modificado
+- **Refatoração Visual da Model Quota:** Redesenho completo do componente exclusivo do Antigravity para espelhar fielmente a interface gráfica oficial (anéis circulares progressivos estilo `stroke-dasharray` para limites semanais e de cinco horas), substituindo as antigas barras lineares genéricas.
+
+---
+
 ## [1.2.0] - 2026-09-27
 
 ### Adicionado

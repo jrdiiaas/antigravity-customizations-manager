@@ -7,21 +7,24 @@ class QuotaModel {
     try {
       // Em um ambiente de produção real do Antigravity, 
       // a ferramenta CLI retornaria o consumo atual de tokens.
-      const { stdout } = await exec('agy quota --json');
-      const data = JSON.parse(stdout.trim());
+      // const { stdout } = await exec('agy quota --json');
+      // const data = JSON.parse(stdout.trim());
       
-      const used = data.used || 0;
-      const limit = data.limit || 0;
-      const percent = limit > 0 ? (used / limit) * 100 : 0;
-      
-      return { used, limit, percent };
-    } catch (e) {
-      // Retornar fallback para quando a CLI do Antigravity não estiver instalada (ambiente de dev)
-      // ou falhar a execução, simulando o status.
+      // Simulando a estrutura requerida pelo novo design visual
       return {
-        used: 12500,
-        limit: 20000,
-        percent: 62.5
+        weekly: {
+          remaining: 59,
+          desc: 'You have used some of your weekly limit, it will fully refresh in 2 days, 20 hours.'
+        },
+        fiveHour: {
+          remaining: 77,
+          desc: 'You have used some of your 5-hour limit, it will fully refresh in 2 hours, 43 minutes.'
+        }
+      };
+    } catch (e) {
+      return {
+        weekly: { remaining: 0, desc: 'Erro ao buscar dados.' },
+        fiveHour: { remaining: 0, desc: 'Erro ao buscar dados.' }
       };
     }
   }

@@ -25,16 +25,44 @@ class WebviewHtml {
     
     ${isAntigravity ? `
     <!-- Model Quota (Exclusivo Antigravity) -->
-    <div class="budget-card" id="model-quota-card" style="margin-bottom: 12px; border-color: #3b82f6;">
-      <div class="budget-header">
-        <span class="budget-title" style="color: #3b82f6;">MODEL QUOTA (ANTIGRAVITY)</span>
-        <span class="budget-value"><span id="quota-used">Carregando...</span> / <span id="quota-limit">-</span></span>
+    <div class="quota-section" id="model-quota-card">
+      <div class="quota-section-header">
+        <span class="quota-section-title">Gemini Models</span>
+        <svg class="info-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
       </div>
-      <div class="progress-track">
-        <div id="quota-progress-fill" class="progress-fill healthy" style="width: 0%; background: #3b82f6;"></div>
-      </div>
-      <div class="budget-footer">
-        <span id="quota-status-text">Buscando quota unificada...</span>
+      <div class="quota-card">
+        <!-- Item 1: Weekly Limit -->
+        <div class="quota-item">
+          <div class="quota-item-info">
+            <div class="quota-item-title">Weekly Limit Remaining</div>
+            <div class="quota-item-desc" id="quota-weekly-desc">Carregando...</div>
+          </div>
+          <div class="quota-item-value">
+            <span class="quota-percentage" id="quota-weekly-percentage">--%</span>
+            <div class="circular-progress">
+              <svg viewBox="0 0 36 36">
+                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="circle" id="quota-weekly-ring" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Item 2: Five Hour Limit -->
+        <div class="quota-item">
+          <div class="quota-item-info">
+            <div class="quota-item-title">Five Hour Limit Remaining</div>
+            <div class="quota-item-desc" id="quota-fivehour-desc">Carregando...</div>
+          </div>
+          <div class="quota-item-value">
+            <span class="quota-percentage" id="quota-fivehour-percentage">--%</span>
+            <div class="circular-progress">
+              <svg viewBox="0 0 36 36">
+                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="circle" id="quota-fivehour-ring" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     ` : ''}

@@ -7,6 +7,13 @@ e este projeto adere ao [Semantic Versioning (SemVer)](https://semver.org/lang/p
 
 ---
 
+## [1.2.0] - 2026-09-27
+
+### Adicionado
+- **Vista Rápida de Model Quota (Exclusivo Antigravity):** Inserção de um quadro unificado de "Model Quota" logo acima do painel de orçamento de tokens, que espelha em tempo real o saldo da CLI do Antigravity. A funcionalidade e o alerta preditivo (barras dinâmicas verde, amarela, vermelha) estão limitados exclusivamente à IDE Antigravity. Em ambientes tradicionais (VS Code, Cursor, Windsurf, etc.), o componente é ocultado de maneira transparente.
+
+---
+
 ## [1.1.1] - 2026-09-22
 
 ### Adicionado

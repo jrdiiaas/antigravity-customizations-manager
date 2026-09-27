@@ -8,6 +8,7 @@ class WebviewHtml {
     const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'src', 'views', 'media', 'style.css'));
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'src', 'views', 'media', 'main.js'));
     const nonce = this.getNonce();
+    const isAntigravity = vscode.env.appName.toLowerCase().includes('antigravity') || vscode.env.appName.toLowerCase().includes('gemini') || process.env.AGY_VERSION;
 
     return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -21,6 +22,23 @@ class WebviewHtml {
 <body>
   <!-- Cabeçalho com Consumo de Tokens -->
   <div class="header-container">
+    
+    ${isAntigravity ? `
+    <!-- Model Quota (Exclusivo Antigravity) -->
+    <div class="budget-card" id="model-quota-card" style="margin-bottom: 12px; border-color: #3b82f6;">
+      <div class="budget-header">
+        <span class="budget-title" style="color: #3b82f6;">MODEL QUOTA (ANTIGRAVITY)</span>
+        <span class="budget-value"><span id="quota-used">Carregando...</span> / <span id="quota-limit">-</span></span>
+      </div>
+      <div class="progress-track">
+        <div id="quota-progress-fill" class="progress-fill healthy" style="width: 0%; background: #3b82f6;"></div>
+      </div>
+      <div class="budget-footer">
+        <span id="quota-status-text">Buscando quota unificada...</span>
+      </div>
+    </div>
+    ` : ''}
+
     <div class="budget-card">
       <div class="budget-header">
         <span class="budget-title">ORÇAMENTO DE TOKENS</span>

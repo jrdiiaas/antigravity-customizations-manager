@@ -8,6 +8,7 @@
     agents: [],
     rules: [],
     stats: null,
+    quota: null,
     searchQuery: '',
     openSections: {
       mcp: true,
@@ -23,6 +24,12 @@
   const progressFillEl = document.getElementById('progress-fill');
   const budgetStatusTextEl = document.getElementById('budget-status-text');
   const searchInputEl = document.getElementById('search-input');
+
+  const quotaCardEl = document.getElementById('model-quota-card');
+  const quotaUsedEl = document.getElementById('quota-used');
+  const quotaLimitEl = document.getElementById('quota-limit');
+  const quotaProgressFillEl = document.getElementById('quota-progress-fill');
+  const quotaStatusTextEl = document.getElementById('quota-status-text');
 
   const mcpListEl = document.getElementById('mcp-list');
   const mcpBadgeEl = document.getElementById('mcp-badge');
@@ -68,6 +75,7 @@
         state.agents = message.agents || [];
         state.rules = message.rules || [];
         state.stats = message.stats || null;
+        state.quota = message.quota || null;
         updateUI();
         break;
       case 'error':
@@ -78,7 +86,33 @@
 
   function updateUI() {
     renderStats();
+    renderQuota();
     renderLists();
+  }
+
+  function renderQuota() {
+    if (!quotaCardEl) return;
+    
+    if (!state.quota) {
+      quotaStatusTextEl.textContent = 'Erro ou métrica indisponível.';
+      return;
+    }
+    
+    const { used, limit, percent } = state.quota;
+    quotaUsedEl.textContent = Number(used).toLocaleString('pt-BR');
+    quotaLimitEl.textContent = Number(limit).toLocaleString('pt-BR');
+    quotaProgressFillEl.style.width = `${percent}%`;
+    
+    if (percent < 50) {
+      quotaProgressFillEl.style.background = '#22c55e'; // Verde
+      quotaStatusTextEl.textContent = 'Consumo saudável.';
+    } else if (percent < 85) {
+      quotaProgressFillEl.style.background = '#eab308'; // Amarelo
+      quotaStatusTextEl.textContent = 'Consumo em alerta.';
+    } else {
+      quotaProgressFillEl.style.background = '#ef4444'; // Vermelho
+      quotaStatusTextEl.textContent = 'Próximo do limite de bloqueio.';
+    }
   }
 
   function renderStats() {

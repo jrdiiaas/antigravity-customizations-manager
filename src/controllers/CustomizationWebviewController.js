@@ -4,6 +4,7 @@ const SkillsModel = require('../models/SkillsModel');
 const AgentsModel = require('../models/AgentsModel');
 const RulesModel = require('../models/RulesModel');
 const ContextBudgetModel = require('../models/ContextBudgetModel');
+const QuotaModel = require('../models/QuotaModel');
 const WebviewHtml = require('../views/WebviewHtml');
 
 class CustomizationWebviewController {
@@ -85,6 +86,12 @@ class CustomizationWebviewController {
       const agents = this.agentsModel.getAllAgents();
       const rules = this.rulesModel.getAllRules();
       const stats = ContextBudgetModel.calculateStats(mcpServers, skills, rules, agents);
+      
+      const isAntigravity = vscode.env.appName.toLowerCase().includes('antigravity') || vscode.env.appName.toLowerCase().includes('gemini') || process.env.AGY_VERSION;
+      let quota = null;
+      if (isAntigravity) {
+        quota = await QuotaModel.getQuota();
+      }
 
       await this.view.webview.postMessage({
         type: 'updateData',
@@ -92,7 +99,8 @@ class CustomizationWebviewController {
         skills,
         agents,
         rules,
-        stats
+        stats,
+        quota
       });
     } catch (err) {
       console.error('[CustomizationWebviewController] Erro ao carregar dados:', err);

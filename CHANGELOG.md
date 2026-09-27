@@ -7,6 +7,13 @@ e este projeto adere ao [Semantic Versioning (SemVer)](https://semver.org/lang/p
 
 ---
 
+## [1.2.2] - 2026-09-27
+
+### Adicionado
+- **Claude and GPT Models Quota:** Integrada uma nova camada de métricas progressivas, completando fielmente o painel da screenshot com o bloco de Claude e GPT models, com separação correta de anéis (Weekly e Five Hour Limits).
+
+---
+
 ## [1.2.1] - 2026-09-27
 
 ### Modificado

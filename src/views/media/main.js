@@ -26,13 +26,21 @@
   const searchInputEl = document.getElementById('search-input');
 
   const quotaCardEl = document.getElementById('model-quota-card');
-  const quotaWeeklyDescEl = document.getElementById('quota-weekly-desc');
-  const quotaWeeklyPercentEl = document.getElementById('quota-weekly-percentage');
-  const quotaWeeklyRingEl = document.getElementById('quota-weekly-ring');
+  const quotaGeminiWeeklyDescEl = document.getElementById('quota-gemini-weekly-desc');
+  const quotaGeminiWeeklyPercentEl = document.getElementById('quota-gemini-weekly-percentage');
+  const quotaGeminiWeeklyRingEl = document.getElementById('quota-gemini-weekly-ring');
   
-  const quotaFiveHourDescEl = document.getElementById('quota-fivehour-desc');
-  const quotaFiveHourPercentEl = document.getElementById('quota-fivehour-percentage');
-  const quotaFiveHourRingEl = document.getElementById('quota-fivehour-ring');
+  const quotaGeminiFiveHourDescEl = document.getElementById('quota-gemini-fivehour-desc');
+  const quotaGeminiFiveHourPercentEl = document.getElementById('quota-gemini-fivehour-percentage');
+  const quotaGeminiFiveHourRingEl = document.getElementById('quota-gemini-fivehour-ring');
+
+  const quotaClaudeGptWeeklyDescEl = document.getElementById('quota-claudegpt-weekly-desc');
+  const quotaClaudeGptWeeklyPercentEl = document.getElementById('quota-claudegpt-weekly-percentage');
+  const quotaClaudeGptWeeklyRingEl = document.getElementById('quota-claudegpt-weekly-ring');
+
+  const quotaClaudeGptFiveHourDescEl = document.getElementById('quota-claudegpt-fivehour-desc');
+  const quotaClaudeGptFiveHourPercentEl = document.getElementById('quota-claudegpt-fivehour-percentage');
+  const quotaClaudeGptFiveHourRingEl = document.getElementById('quota-claudegpt-fivehour-ring');
 
   const mcpListEl = document.getElementById('mcp-list');
   const mcpBadgeEl = document.getElementById('mcp-badge');
@@ -96,9 +104,11 @@
   function renderQuota() {
     if (!quotaCardEl) return;
     
-    if (!state.quota || !state.quota.weekly) {
-      if (quotaWeeklyDescEl) quotaWeeklyDescEl.textContent = 'Métrica indisponível.';
-      if (quotaFiveHourDescEl) quotaFiveHourDescEl.textContent = 'Métrica indisponível.';
+    if (!state.quota || !state.quota.gemini) {
+      if (quotaGeminiWeeklyDescEl) quotaGeminiWeeklyDescEl.textContent = 'Métrica indisponível.';
+      if (quotaGeminiFiveHourDescEl) quotaGeminiFiveHourDescEl.textContent = 'Métrica indisponível.';
+      if (quotaClaudeGptWeeklyDescEl) quotaClaudeGptWeeklyDescEl.textContent = 'Métrica indisponível.';
+      if (quotaClaudeGptFiveHourDescEl) quotaClaudeGptFiveHourDescEl.textContent = 'Métrica indisponível.';
       return;
     }
     
@@ -121,8 +131,13 @@
       }
     };
 
-    updateRing(quotaWeeklyPercentEl, quotaWeeklyRingEl, quotaWeeklyDescEl, state.quota.weekly);
-    updateRing(quotaFiveHourPercentEl, quotaFiveHourRingEl, quotaFiveHourDescEl, state.quota.fiveHour);
+    updateRing(quotaGeminiWeeklyPercentEl, quotaGeminiWeeklyRingEl, quotaGeminiWeeklyDescEl, state.quota.gemini.weekly);
+    updateRing(quotaGeminiFiveHourPercentEl, quotaGeminiFiveHourRingEl, quotaGeminiFiveHourDescEl, state.quota.gemini.fiveHour);
+
+    if (state.quota.claudeGpt) {
+      updateRing(quotaClaudeGptWeeklyPercentEl, quotaClaudeGptWeeklyRingEl, quotaClaudeGptWeeklyDescEl, state.quota.claudeGpt.weekly);
+      updateRing(quotaClaudeGptFiveHourPercentEl, quotaClaudeGptFiveHourRingEl, quotaClaudeGptFiveHourDescEl, state.quota.claudeGpt.fiveHour);
+    }
   }
 
   function renderStats() {

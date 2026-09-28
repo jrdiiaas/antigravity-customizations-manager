@@ -12,6 +12,7 @@ class CustomizationWebviewController {
     this.extensionUri = extensionUri;
     this.workspaceRoot = workspaceRoot;
     this.view = null;
+    this.autoRefreshInterval = null;
 
     this.mcpModel = new McpModel(this.workspaceRoot);
     this.skillsModel = new SkillsModel(this.workspaceRoot);
@@ -30,6 +31,23 @@ class CustomizationWebviewController {
     };
 
     webviewView.webview.html = WebviewHtml.getHtml(webviewView.webview, this.extensionUri);
+
+    // Inicia auto-refresh periódico quando a view estiver visível
+    this.startAutoRefresh();
+
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) {
+        this.refresh();
+        this.startAutoRefresh();
+      } else {
+        this.stopAutoRefresh();
+      }
+    });
+
+    webviewView.onDidDispose(() => {
+      this.stopAutoRefresh();
+      this.view = null;
+    });
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
       try {
@@ -75,6 +93,23 @@ class CustomizationWebviewController {
         vscode.window.showErrorMessage(`Erro no Customizations Manager: ${err.message}`);
       }
     });
+  }
+
+  startAutoRefresh() {
+    this.stopAutoRefresh();
+    // Atualização leve a cada 20 segundos em segundo plano
+    this.autoRefreshInterval = setInterval(() => {
+      if (this.view && this.view.visible) {
+        this.refresh();
+      }
+    }, 20000);
+  }
+
+  stopAutoRefresh() {
+    if (this.autoRefreshInterval) {
+      clearInterval(this.autoRefreshInterval);
+      this.autoRefreshInterval = null;
+    }
   }
 
   async refresh() {

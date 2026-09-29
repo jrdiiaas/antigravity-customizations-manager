@@ -96,84 +96,120 @@ body {
   color: var(--vscode-descriptionForeground, #a1a1aa);
 }
 
-/* Quota Section */
+/* Model Quota Section */
+.model-quota-container {
+  margin-bottom: 14px;
+}
+
 .quota-section {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .quota-section-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  padding: 0 4px;
+}
+
+.quota-header-left {
+  display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 8px;
-  padding: 0 4px;
 }
 
 .quota-section-title {
   font-weight: 600;
   font-size: 13px;
+  letter-spacing: -0.2px;
   color: var(--vscode-foreground, #e4e4e7);
 }
 
-.quota-model-count {
-  font-size: 11px;
+.quota-info-tooltip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--vscode-descriptionForeground, #a1a1aa);
-  opacity: 0.7;
+  cursor: help;
+  opacity: 0.75;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.quota-info-tooltip-btn:hover {
+  opacity: 1;
+  color: var(--vscode-foreground, #fff);
+}
+
+.quota-model-subtitle {
+  font-size: 10.5px;
+  color: var(--vscode-descriptionForeground, #a1a1aa);
+  opacity: 0.8;
+  font-weight: 400;
 }
 
 .quota-card {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   overflow: hidden;
+  backdrop-filter: blur(8px);
 }
 
 .quota-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background-color 0.15s ease;
 }
 
 .quota-item:last-child {
   border-bottom: none;
 }
 
+.quota-item:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
 .quota-item-info {
   flex: 1;
-  padding-right: 16px;
+  padding-right: 14px;
 }
 
 .quota-item-title {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--vscode-foreground, #e4e4e7);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .quota-item-desc {
   font-size: 11px;
   color: var(--vscode-descriptionForeground, #a1a1aa);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .quota-item-value {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .quota-percentage {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 700;
   color: var(--vscode-foreground, #e4e4e7);
   font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
 }
 
 .circular-progress {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 .circular-progress svg {
@@ -184,16 +220,16 @@ body {
 
 .circle-bg {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.1);
+  stroke: rgba(255, 255, 255, 0.08);
   stroke-width: 3.5;
 }
 
 .circle {
   fill: none;
-  stroke: #4ade80; /* default green */
+  stroke: #4ade80;
   stroke-width: 3.5;
   stroke-linecap: round;
-  transition: stroke-dasharray 0.5s ease, stroke 0.3s ease;
+  transition: stroke-dasharray 0.3s ease, stroke 0.3s ease;
 }
 
 /* Quick Actions & Search */

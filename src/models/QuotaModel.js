@@ -7,52 +7,6 @@ class QuotaModel {
   static cachedQuota = null;
 
   /**
-   * Formats the time remaining until the given reset timestamp
-   * into a human-readable string.
-   * @param {string} resetTimeISO - ISO 8601 timestamp from the API
-   * @param {number} remainingPercent - 0 to 100
-   */
-  static formatResetDescription(resetTimeISO, remainingPercent) {
-    if (remainingPercent >= 100) {
-      return 'Your limit is fully available.';
-    }
-
-    if (!resetTimeISO) {
-      return 'You have used some of your limit.';
-    }
-
-    const resetMs = new Date(resetTimeISO).getTime();
-    const diffMs = resetMs - Date.now();
-
-    if (diffMs <= 0) {
-      return 'Limit refreshing momentarily...';
-    }
-
-    const totalMinutes = Math.floor(diffMs / 60000);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    const days = Math.floor(hours / 24);
-    const remHours = hours % 24;
-
-    if (days > 0) {
-      const dayStr = `${days} day${days > 1 ? 's' : ''}`;
-      const hourStr = `${remHours} hour${remHours !== 1 ? 's' : ''}`;
-      if (remainingPercent === 0) {
-        return `Limit reached. Resets in ${dayStr}, ${hourStr}.`;
-      }
-      return `Resets in ${dayStr}, ${hourStr}.`;
-    }
-
-    const hourStr = `${hours} hour${hours !== 1 ? 's' : ''}`;
-    const minStr = `${minutes} min${minutes !== 1 ? 's' : ''}`;
-
-    if (remainingPercent === 0) {
-      return `Limit reached. Resets in ${hourStr}, ${minStr}. If on a supported paid plan, you can use AI credits in the interim.`;
-    }
-    return `Resets in ${hourStr}, ${minStr}.`;
-  }
-
-  /**
    * Discovers the running Language Server process and its listening ports.
    */
   static discoverLanguageServer() {
@@ -87,9 +41,9 @@ class QuotaModel {
   }
 
   /**
-   * Makes the Connect-RPC call to the Language Server's GetUserStatus endpoint.
+   * Makes the Connect-RPC call to the Language Server's RetrieveUserQuotaSummary endpoint.
    */
-  static async requestUserStatus(port, csrfToken) {
+  static async requestQuotaSummary(port, csrfToken) {
     return new Promise((resolve, reject) => {
       const postData = JSON.stringify({
         metadata: {
@@ -101,7 +55,7 @@ class QuotaModel {
       const req = http.request({
         hostname: '127.0.0.1',
         port: port,
-        path: '/exa.language_server_pb.LanguageServerService/GetUserStatus',
+        path: '/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -137,71 +91,107 @@ class QuotaModel {
   }
 
   /**
-   * Fetches real-time quota from the Language Server API.
-   * Returns data structured by model group (gemini, claudeGpt)
-   * with ONLY the real values from the API — no fabricated data.
+   * Fetches real-time quota from the native Antigravity Language Server API.
+   * Returns structured groups and buckets exactly matching native Antigravity settings.
    */
   static async getQuota() {
     try {
       let connection = this.cachedConnection;
-      let data = null;
+      let rawData = null;
 
-      // 1. Try cached connection
+      // 1. Try cached connection first
       if (connection && connection.port && connection.csrfToken) {
         try {
-          data = await this.requestUserStatus(connection.port, connection.csrfToken);
+          rawData = await this.requestQuotaSummary(connection.port, connection.csrfToken);
         } catch (e) {
           this.cachedConnection = null;
         }
       }
 
-      // 2. If no cache or it failed, discover new connection
-      if (!data || !data.userStatus) {
+      // 2. Discover if no cache or cached connection failed
+      if (!rawData || !rawData.response) {
         const lsInfo = this.discoverLanguageServer();
         if (lsInfo && lsInfo.ports && lsInfo.ports.length > 0) {
           for (const port of lsInfo.ports) {
             try {
-              data = await this.requestUserStatus(port, lsInfo.csrfToken);
-              if (data && data.userStatus) {
+              rawData = await this.requestQuotaSummary(port, lsInfo.csrfToken);
+              if (rawData && rawData.response && rawData.response.groups) {
                 this.cachedConnection = { port, csrfToken: lsInfo.csrfToken };
                 break;
               }
-            } catch (err) {}
+            } catch (err) {
+              // Port might require HTTPS or be non-responsive, continue to next
+            }
           }
         }
       }
 
-      if (!data || !data.userStatus) {
+      if (!rawData || !rawData.response || !rawData.response.groups) {
         return this.cachedQuota || this.getUnavailableState();
       }
 
-      const userStatus = data.userStatus;
-      const models = userStatus.cascadeModelConfigData?.clientModelConfigs || [];
-
-      // --- GEMINI MODELS ---
-      const geminiModels = models.filter(m => {
-        const name = (m.label || m.modelId || '').toLowerCase();
-        return name.includes('gemini');
+      const groups = rawData.response.groups.map(group => {
+        const isGemini = (group.displayName || '').toLowerCase().includes('gemini');
+        return {
+          id: isGemini ? 'gemini' : 'claudegpt',
+          displayName: group.displayName || '',
+          description: group.description || '',
+          buckets: (group.buckets || []).map(b => {
+            const fraction = b.remainingFraction ?? 1;
+            const percentage = Math.round(fraction * 100);
+            return {
+              id: b.bucketId || '',
+              window: b.window || '',
+              displayName: b.displayName || '',
+              description: b.description || (percentage >= 100 ? 'Your limit is fully available.' : ''),
+              fraction: fraction,
+              percentage: percentage,
+              resetTime: b.resetTime || null
+            };
+          })
+        };
       });
-      const geminiWithQuota = geminiModels.find(m => m.quotaInfo) || geminiModels[0];
-      const geminiQuota = this.extractQuotaFromModel(geminiWithQuota);
 
-      // --- CLAUDE / GPT MODELS ---
-      const claudeGptModels = models.filter(m => {
-        const name = (m.label || m.modelId || '').toLowerCase();
-        return name.includes('claude') || name.includes('gpt') || name.includes('oss');
-      });
-      const claudeGptWithQuota = claudeGptModels.find(m => m.quotaInfo) || claudeGptModels[0];
-      const claudeGptQuota = this.extractQuotaFromModel(claudeGptWithQuota);
+      const geminiGroup = groups.find(g => g.id === 'gemini');
+      const claudeGroup = groups.find(g => g.id === 'claudegpt');
+
+      const geminiWeekly = geminiGroup ? geminiGroup.buckets.find(b => b.window === 'weekly' || b.id.includes('weekly')) : null;
+      const gemini5h = geminiGroup ? geminiGroup.buckets.find(b => b.window === '5h' || b.id.includes('5h')) : null;
+
+      const claudeWeekly = claudeGroup ? claudeGroup.buckets.find(b => b.window === 'weekly' || b.id.includes('weekly')) : null;
+      const claude5h = claudeGroup ? claudeGroup.buckets.find(b => b.window === '5h' || b.id.includes('5h')) : null;
 
       const result = {
+        connected: true,
+        description: rawData.response.description || '',
+        groups: groups,
         gemini: {
-          quota: geminiQuota,
-          modelCount: geminiModels.length
+          displayName: geminiGroup ? geminiGroup.displayName : 'Gemini Models',
+          description: geminiGroup ? geminiGroup.description : '',
+          weekly: {
+            remaining: geminiWeekly ? geminiWeekly.percentage : null,
+            desc: geminiWeekly ? geminiWeekly.description : '',
+            resetTime: geminiWeekly ? geminiWeekly.resetTime : null
+          },
+          fiveHour: {
+            remaining: gemini5h ? gemini5h.percentage : null,
+            desc: gemini5h ? gemini5h.description : '',
+            resetTime: gemini5h ? gemini5h.resetTime : null
+          }
         },
         claudeGpt: {
-          quota: claudeGptQuota,
-          modelCount: claudeGptModels.length
+          displayName: claudeGroup ? claudeGroup.displayName : 'Claude and GPT models',
+          description: claudeGroup ? claudeGroup.description : '',
+          weekly: {
+            remaining: claudeWeekly ? claudeWeekly.percentage : null,
+            desc: claudeWeekly ? claudeWeekly.description : '',
+            resetTime: claudeWeekly ? claudeWeekly.resetTime : null
+          },
+          fiveHour: {
+            remaining: claude5h ? claude5h.percentage : null,
+            desc: claude5h ? claude5h.description : '',
+            resetTime: claude5h ? claude5h.resetTime : null
+          }
         }
       };
 
@@ -209,33 +199,9 @@ class QuotaModel {
       this.lastFetchTime = Date.now();
       return result;
     } catch (e) {
-      console.error('[QuotaModel] Error fetching real-time quota:', e);
+      console.error('[QuotaModel] Error fetching native quota summary:', e);
       return this.cachedQuota || this.getUnavailableState();
     }
-  }
-
-  /**
-   * Extracts quota info from a single model's data.
-   * Returns { remaining, resetTime, desc } using ONLY real API values.
-   */
-  static extractQuotaFromModel(model) {
-    if (!model || !model.quotaInfo) {
-      return {
-        remaining: null,
-        resetTime: null,
-        desc: 'Quota data unavailable.'
-      };
-    }
-
-    const fraction = model.quotaInfo.remainingFraction ?? 1;
-    const remaining = Math.round(fraction * 100);
-    const resetTime = model.quotaInfo.resetTime || null;
-
-    return {
-      remaining,
-      resetTime,
-      desc: this.formatResetDescription(resetTime, remaining)
-    };
   }
 
   /**
@@ -243,14 +209,28 @@ class QuotaModel {
    */
   static getUnavailableState() {
     return {
-      gemini: {
-        quota: { remaining: null, resetTime: null, desc: 'Unable to connect to Language Server.' },
-        modelCount: 0
-      },
-      claudeGpt: {
-        quota: { remaining: null, resetTime: null, desc: 'Unable to connect to Language Server.' },
-        modelCount: 0
-      }
+      connected: false,
+      description: 'Unable to connect to Antigravity Language Server.',
+      groups: [
+        {
+          id: 'gemini',
+          displayName: 'Gemini Models',
+          description: 'Models within this group: Gemini Flash, Gemini Pro',
+          buckets: [
+            { id: 'gemini-weekly', window: 'weekly', displayName: 'Weekly Limit Remaining', description: 'Language Server disconnected', fraction: 0, percentage: 0, resetTime: null },
+            { id: 'gemini-5h', window: '5h', displayName: 'Five Hour Limit Remaining', description: 'Language Server disconnected', fraction: 0, percentage: 0, resetTime: null }
+          ]
+        },
+        {
+          id: 'claudegpt',
+          displayName: 'Claude and GPT models',
+          description: 'Models within this group: Claude Opus, Claude Sonnet, GPT-OSS',
+          buckets: [
+            { id: '3p-weekly', window: 'weekly', displayName: 'Weekly Limit Remaining', description: 'Language Server disconnected', fraction: 0, percentage: 0, resetTime: null },
+            { id: '3p-5h', window: '5h', displayName: 'Five Hour Limit Remaining', description: 'Language Server disconnected', fraction: 0, percentage: 0, resetTime: null }
+          ]
+        }
+      ]
     };
   }
 }

@@ -7,6 +7,18 @@ e este projeto adere ao [Semantic Versioning (SemVer)](https://semver.org/lang/p
 
 ---
 
+## [2.0.0] - 2026-09-29
+
+### Adicionado
+- **Espelho Fidedigno de Cota de Modelos em Tempo Real (Antigravity):** Reconstrução completa do subsistema de cota de modelos integrando diretamente com o serviço RPC nativo `LanguageServerService/RetrieveUserQuotaSummary` do Antigravity, obtendo em tempo real os 4 indicadores oficiais (Weekly Limit Remaining e Five Hour Limit Remaining para as famílias Gemini Models e Claude and GPT models).
+- **Polling de Alta Frequência (1s) sem Flicker:** Implementação de ciclo de atualização a cada 1 segundo dedicado à cota de modelos (`updateQuota`), atualizando cirurgicamente os anéis SVG e os textos oficiais dinâmicos de renovação sem causar recarregamento da interface.
+- **Hierarquia Visual e Didática Oficial:** Exibição dos dois grupos com subtítulos detalhando os modelos incluídos (Gemini Flash, Gemini Pro / Claude Opus, Claude Sonnet, GPT-OSS) e tooltips informativos oficiais com orientações sobre limites de uso e cotas proporcionais.
+
+### Modificado
+- **Eliminação Total de Heurísticas:** Removidas todas as estimativas e valores estáticos legados, garantindo fidelidade matemática absoluta aos dados providos pelo Antigravity Language Server.
+
+---
+
 ## [1.2.4] - 2026-09-29
 
 ### Adicionado

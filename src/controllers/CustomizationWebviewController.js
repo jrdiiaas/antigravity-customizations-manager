@@ -12,7 +12,8 @@ class CustomizationWebviewController {
     this.extensionUri = extensionUri;
     this.workspaceRoot = workspaceRoot;
     this.view = null;
-    this.autoRefreshInterval = null;
+    this.quotaRefreshInterval = null;
+    this.fullRefreshInterval = null;
 
     this.mcpModel = new McpModel(this.workspaceRoot);
     this.skillsModel = new SkillsModel(this.workspaceRoot);
@@ -97,21 +98,53 @@ class CustomizationWebviewController {
 
   startAutoRefresh() {
     this.stopAutoRefresh();
-    // Atualização leve a cada 20 segundos em segundo plano
-    this.autoRefreshInterval = setInterval(() => {
+
+    // 1. Polling dedicado de Quota em tempo real a cada 1 segundo (leve, sem afetar performance)
+    this.quotaRefreshInterval = setInterval(() => {
+      if (this.view && this.view.visible) {
+        this.refreshQuota();
+      }
+    }, 1000);
+
+    // 2. Refresh completo de MCP, Skills, Regras e Agentes a cada 30 segundos
+    this.fullRefreshInterval = setInterval(() => {
       if (this.view && this.view.visible) {
         this.refresh();
       }
-    }, 20000);
+    }, 30000);
   }
 
   stopAutoRefresh() {
-    if (this.autoRefreshInterval) {
-      clearInterval(this.autoRefreshInterval);
-      this.autoRefreshInterval = null;
+    if (this.quotaRefreshInterval) {
+      clearInterval(this.quotaRefreshInterval);
+      this.quotaRefreshInterval = null;
+    }
+    if (this.fullRefreshInterval) {
+      clearInterval(this.fullRefreshInterval);
+      this.fullRefreshInterval = null;
     }
   }
 
+  /**
+   * Atualização instantânea e cirúrgica da cota de tokens (disparada a cada 1s).
+   */
+  async refreshQuota() {
+    if (!this.view || !this.view.visible) return;
+
+    try {
+      const quota = await QuotaModel.getQuota();
+      await this.view.webview.postMessage({
+        type: 'updateQuota',
+        quota
+      });
+    } catch (err) {
+      console.error('[CustomizationWebviewController] Erro no polling de quota:', err);
+    }
+  }
+
+  /**
+   * Atualização completa de todas as entidades do painel.
+   */
   async refresh() {
     if (!this.view) return;
 
@@ -122,11 +155,7 @@ class CustomizationWebviewController {
       const rules = this.rulesModel.getAllRules();
       const stats = ContextBudgetModel.calculateStats(mcpServers, skills, rules, agents);
       
-      const isAntigravity = vscode.env.appName.toLowerCase().includes('antigravity') || vscode.env.appName.toLowerCase().includes('gemini') || process.env.AGY_VERSION;
-      let quota = null;
-      if (isAntigravity) {
-        quota = await QuotaModel.getQuota();
-      }
+      const quota = await QuotaModel.getQuota();
 
       await this.view.webview.postMessage({
         type: 'updateData',
@@ -143,7 +172,6 @@ class CustomizationWebviewController {
   }
 
   setupWatchers() {
-    // Monitora alterações em mcp_config.json
     const mcpWatcher = vscode.workspace.createFileSystemWatcher('**/mcp_config.json');
     mcpWatcher.onDidChange(() => this.refresh());
     mcpWatcher.onDidCreate(() => this.refresh());

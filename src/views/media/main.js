@@ -18,24 +18,14 @@
     }
   };
 
-  // Elementos DOM
+  // Elementos DOM - Orçamento e Busca
   const totalTokensEl = document.getElementById('total-tokens');
   const budgetLimitEl = document.getElementById('budget-limit');
   const progressFillEl = document.getElementById('progress-fill');
   const budgetStatusTextEl = document.getElementById('budget-status-text');
   const searchInputEl = document.getElementById('search-input');
 
-  const quotaCardEl = document.getElementById('model-quota-card');
-  const quotaGeminiDescEl = document.getElementById('quota-gemini-desc');
-  const quotaGeminiPercentEl = document.getElementById('quota-gemini-percentage');
-  const quotaGeminiRingEl = document.getElementById('quota-gemini-ring');
-  const geminiModelCountEl = document.getElementById('gemini-model-count');
-
-  const quotaClaudeGptDescEl = document.getElementById('quota-claudegpt-desc');
-  const quotaClaudeGptPercentEl = document.getElementById('quota-claudegpt-percentage');
-  const quotaClaudeGptRingEl = document.getElementById('quota-claudegpt-ring');
-  const claudeGptModelCountEl = document.getElementById('claudegpt-model-count');
-
+  // Elementos DOM - Listas e Badges
   const mcpListEl = document.getElementById('mcp-list');
   const mcpBadgeEl = document.getElementById('mcp-badge');
   const skillsListEl = document.getElementById('skills-list');
@@ -80,9 +70,19 @@
         state.agents = message.agents || [];
         state.rules = message.rules || [];
         state.stats = message.stats || null;
-        state.quota = message.quota || null;
+        if (message.quota) {
+          state.quota = message.quota;
+        }
         updateUI();
         break;
+
+      case 'updateQuota':
+        if (message.quota) {
+          state.quota = message.quota;
+          renderQuota();
+        }
+        break;
+
       case 'error':
         console.error('Erro recebido:', message.error);
         break;
@@ -95,44 +95,60 @@
     renderLists();
   }
 
+  /**
+   * Renderiza os 4 indicadores oficiais de cota em tempo real (Gemini + Claude/GPT x Weekly + 5h)
+   */
   function renderQuota() {
-    if (!quotaCardEl) return;
-    
-    if (!state.quota || !state.quota.gemini) {
-      if (quotaGeminiDescEl) quotaGeminiDescEl.textContent = 'Métrica indisponível.';
-      if (quotaClaudeGptDescEl) quotaClaudeGptDescEl.textContent = 'Métrica indisponível.';
-      return;
-    }
-    
-    // Helper to update ring, percentage, desc, and color
-    const updateRing = (percentEl, ringEl, descEl, quotaData) => {
-      const remaining = quotaData.remaining != null ? quotaData.remaining : 0;
-      percentEl.textContent = `${remaining}%`;
-      descEl.textContent = quotaData.desc || '';
-      
-      ringEl.setAttribute('stroke-dasharray', `${remaining}, 100`);
-      
-      if (remaining > 50) {
-        ringEl.style.stroke = '#4ade80'; // Green
-      } else if (remaining > 15) {
-        ringEl.style.stroke = '#fbbf24'; // Yellow
+    if (!state.quota || !state.quota.groups) return;
+
+    const updateBucket = (prefix, bucket) => {
+      const percentEl = document.getElementById(`quota-${prefix}-percentage`);
+      const ringEl = document.getElementById(`quota-${prefix}-ring`);
+      const descEl = document.getElementById(`quota-${prefix}-desc`);
+
+      if (!percentEl || !ringEl || !descEl) return;
+
+      if (!bucket) {
+        percentEl.textContent = '--%';
+        descEl.textContent = 'Métrica indisponível no momento.';
+        ringEl.setAttribute('stroke-dasharray', '0, 100');
+        ringEl.style.stroke = 'rgba(255, 255, 255, 0.15)';
+        return;
+      }
+
+      const percentage = bucket.percentage != null ? bucket.percentage : 0;
+      percentEl.textContent = `${percentage}%`;
+      descEl.textContent = bucket.description || (percentage >= 100 ? 'Seu limite está 100% disponível.' : '');
+
+      // Atualiza o anel de progresso SVG circular
+      ringEl.setAttribute('stroke-dasharray', `${percentage}, 100`);
+
+      // Cores semânticas oficiais do Antigravity
+      if (percentage > 50) {
+        ringEl.style.stroke = '#4ade80'; // Verde
+      } else if (percentage > 15) {
+        ringEl.style.stroke = '#fbbf24'; // Amarelo/Laranja
       } else {
-        ringEl.style.stroke = '#ef4444'; // Red
+        ringEl.style.stroke = '#ef4444'; // Vermelho
       }
     };
 
-    // Gemini quota
-    updateRing(quotaGeminiPercentEl, quotaGeminiRingEl, quotaGeminiDescEl, state.quota.gemini.quota);
-    if (geminiModelCountEl && state.quota.gemini.modelCount) {
-      geminiModelCountEl.textContent = `${state.quota.gemini.modelCount} models`;
+    // Grupo 1: Gemini Models
+    const geminiGroup = state.quota.groups.find(g => g.id === 'gemini');
+    if (geminiGroup && geminiGroup.buckets) {
+      const weekly = geminiGroup.buckets.find(b => b.window === 'weekly' || (b.id && b.id.includes('weekly')));
+      const fiveHour = geminiGroup.buckets.find(b => b.window === '5h' || (b.id && b.id.includes('5h')));
+      updateBucket('gemini-weekly', weekly);
+      updateBucket('gemini-5h', fiveHour);
     }
 
-    // Claude/GPT quota
-    if (state.quota.claudeGpt) {
-      updateRing(quotaClaudeGptPercentEl, quotaClaudeGptRingEl, quotaClaudeGptDescEl, state.quota.claudeGpt.quota);
-      if (claudeGptModelCountEl && state.quota.claudeGpt.modelCount) {
-        claudeGptModelCountEl.textContent = `${state.quota.claudeGpt.modelCount} models`;
-      }
+    // Grupo 2: Claude and GPT models
+    const claudeGroup = state.quota.groups.find(g => g.id === 'claudegpt');
+    if (claudeGroup && claudeGroup.buckets) {
+      const weekly = claudeGroup.buckets.find(b => b.window === 'weekly' || (b.id && b.id.includes('weekly')));
+      const fiveHour = claudeGroup.buckets.find(b => b.window === '5h' || (b.id && b.id.includes('5h')));
+      updateBucket('claudegpt-weekly', weekly);
+      updateBucket('claudegpt-5h', fiveHour);
     }
   }
 
@@ -197,8 +213,8 @@
           <div class="item-tags">
             <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
           </div>
-          <div class="item-desc" title="${escapeHtml(server.command + ' ' + server.args)}">
-            ${escapeHtml(server.command)} ${escapeHtml(server.args)}
+          <div class="item-desc" title="${escapeHtml(server.command + ' ' + (server.args || ''))}">
+            ${escapeHtml(server.command)} ${escapeHtml(server.args || '')}
           </div>
         </div>
         <label class="switch">

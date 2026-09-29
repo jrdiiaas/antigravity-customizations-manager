@@ -7,7 +7,7 @@ e este projeto adere ao [Semantic Versioning (SemVer)](https://semver.org/lang/p
 
 ---
 
-## [1.2.3] - 2026-09-28
+## [1.2.4] - 2026-09-29
 
 ### Adicionado
 - **Sincronização em Tempo Real de Limites de Modelos (Antigravity):** Conexão dinâmica e contínua com o Language Server do Antigravity via ConnectRPC (`LanguageServerService/GetUserStatus`), lendo em tempo real os limites remanescentes (porcentagens precisas e tempo estimado de renovação) para as famílias Gemini Models, Claude e GPT.

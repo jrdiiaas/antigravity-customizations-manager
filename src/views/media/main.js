@@ -26,21 +26,15 @@
   const searchInputEl = document.getElementById('search-input');
 
   const quotaCardEl = document.getElementById('model-quota-card');
-  const quotaGeminiWeeklyDescEl = document.getElementById('quota-gemini-weekly-desc');
-  const quotaGeminiWeeklyPercentEl = document.getElementById('quota-gemini-weekly-percentage');
-  const quotaGeminiWeeklyRingEl = document.getElementById('quota-gemini-weekly-ring');
-  
-  const quotaGeminiFiveHourDescEl = document.getElementById('quota-gemini-fivehour-desc');
-  const quotaGeminiFiveHourPercentEl = document.getElementById('quota-gemini-fivehour-percentage');
-  const quotaGeminiFiveHourRingEl = document.getElementById('quota-gemini-fivehour-ring');
+  const quotaGeminiDescEl = document.getElementById('quota-gemini-desc');
+  const quotaGeminiPercentEl = document.getElementById('quota-gemini-percentage');
+  const quotaGeminiRingEl = document.getElementById('quota-gemini-ring');
+  const geminiModelCountEl = document.getElementById('gemini-model-count');
 
-  const quotaClaudeGptWeeklyDescEl = document.getElementById('quota-claudegpt-weekly-desc');
-  const quotaClaudeGptWeeklyPercentEl = document.getElementById('quota-claudegpt-weekly-percentage');
-  const quotaClaudeGptWeeklyRingEl = document.getElementById('quota-claudegpt-weekly-ring');
-
-  const quotaClaudeGptFiveHourDescEl = document.getElementById('quota-claudegpt-fivehour-desc');
-  const quotaClaudeGptFiveHourPercentEl = document.getElementById('quota-claudegpt-fivehour-percentage');
-  const quotaClaudeGptFiveHourRingEl = document.getElementById('quota-claudegpt-fivehour-ring');
+  const quotaClaudeGptDescEl = document.getElementById('quota-claudegpt-desc');
+  const quotaClaudeGptPercentEl = document.getElementById('quota-claudegpt-percentage');
+  const quotaClaudeGptRingEl = document.getElementById('quota-claudegpt-ring');
+  const claudeGptModelCountEl = document.getElementById('claudegpt-model-count');
 
   const mcpListEl = document.getElementById('mcp-list');
   const mcpBadgeEl = document.getElementById('mcp-badge');
@@ -105,38 +99,40 @@
     if (!quotaCardEl) return;
     
     if (!state.quota || !state.quota.gemini) {
-      if (quotaGeminiWeeklyDescEl) quotaGeminiWeeklyDescEl.textContent = 'Métrica indisponível.';
-      if (quotaGeminiFiveHourDescEl) quotaGeminiFiveHourDescEl.textContent = 'Métrica indisponível.';
-      if (quotaClaudeGptWeeklyDescEl) quotaClaudeGptWeeklyDescEl.textContent = 'Métrica indisponível.';
-      if (quotaClaudeGptFiveHourDescEl) quotaClaudeGptFiveHourDescEl.textContent = 'Métrica indisponível.';
+      if (quotaGeminiDescEl) quotaGeminiDescEl.textContent = 'Métrica indisponível.';
+      if (quotaClaudeGptDescEl) quotaClaudeGptDescEl.textContent = 'Métrica indisponível.';
       return;
     }
     
-    // Helper para preencher os anéis
-    const updateRing = (percentEl, ringEl, descEl, data) => {
-      const remaining = data.remaining || 0;
+    // Helper to update ring, percentage, desc, and color
+    const updateRing = (percentEl, ringEl, descEl, quotaData) => {
+      const remaining = quotaData.remaining != null ? quotaData.remaining : 0;
       percentEl.textContent = `${remaining}%`;
-      descEl.textContent = data.desc || '';
+      descEl.textContent = quotaData.desc || '';
       
-      // O dasharray é 100. stroke-dasharray = "preenchimento, espaco"
       ringEl.setAttribute('stroke-dasharray', `${remaining}, 100`);
       
-      // Ajuste de cores baseado no remanescente
       if (remaining > 50) {
-        ringEl.style.stroke = '#4ade80'; // Verde
+        ringEl.style.stroke = '#4ade80'; // Green
       } else if (remaining > 15) {
-        ringEl.style.stroke = '#fbbf24'; // Amarelo
+        ringEl.style.stroke = '#fbbf24'; // Yellow
       } else {
-        ringEl.style.stroke = '#ef4444'; // Vermelho
+        ringEl.style.stroke = '#ef4444'; // Red
       }
     };
 
-    updateRing(quotaGeminiWeeklyPercentEl, quotaGeminiWeeklyRingEl, quotaGeminiWeeklyDescEl, state.quota.gemini.weekly);
-    updateRing(quotaGeminiFiveHourPercentEl, quotaGeminiFiveHourRingEl, quotaGeminiFiveHourDescEl, state.quota.gemini.fiveHour);
+    // Gemini quota
+    updateRing(quotaGeminiPercentEl, quotaGeminiRingEl, quotaGeminiDescEl, state.quota.gemini.quota);
+    if (geminiModelCountEl && state.quota.gemini.modelCount) {
+      geminiModelCountEl.textContent = `${state.quota.gemini.modelCount} models`;
+    }
 
+    // Claude/GPT quota
     if (state.quota.claudeGpt) {
-      updateRing(quotaClaudeGptWeeklyPercentEl, quotaClaudeGptWeeklyRingEl, quotaClaudeGptWeeklyDescEl, state.quota.claudeGpt.weekly);
-      updateRing(quotaClaudeGptFiveHourPercentEl, quotaClaudeGptFiveHourRingEl, quotaClaudeGptFiveHourDescEl, state.quota.claudeGpt.fiveHour);
+      updateRing(quotaClaudeGptPercentEl, quotaClaudeGptRingEl, quotaClaudeGptDescEl, state.quota.claudeGpt.quota);
+      if (claudeGptModelCountEl && state.quota.claudeGpt.modelCount) {
+        claudeGptModelCountEl.textContent = `${state.quota.claudeGpt.modelCount} models`;
+      }
     }
   }
 

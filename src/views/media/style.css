@@ -375,14 +375,14 @@ body {
   transform: rotate(180deg);
 }
 
-.accordion-body {
+.accordion-content {
   display: none;
   padding: 4px 0;
   max-height: 480px;
   overflow-y: auto;
 }
 
-.accordion-section.open .accordion-body {
+.accordion-section.open .accordion-content {
   display: block;
 }
 

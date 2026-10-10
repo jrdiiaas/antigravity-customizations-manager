@@ -378,8 +378,6 @@ body {
 .accordion-content {
   display: none;
   padding: 4px 0;
-  max-height: 480px;
-  overflow-y: auto;
 }
 
 .accordion-section.open .accordion-content {

@@ -32,35 +32,35 @@ Com o **Gestor de Tokens IA**, você ganha um painel dedicado na sua barra later
 ### 1. Cota de Modelos em Tempo Real (Exclusivo Antigravity IDE)
 Espelho fidedigno da tela nativa de configurações de modelos do Antigravity. Exibe os 4 indicadores oficiais (Weekly Limit e Five Hour Limit para Gemini Models e Claude and GPT models) com porcentagens dinâmicas, anéis circulares de progresso SVG e frases oficiais de renovação de limites atualizadas a cada 1 segundo.
 
-![Cota de Modelos em Tempo Real](https://raw.githubusercontent.com/jrdiiaas/antigravity-customizations-manager/main/resources/screenshots/00-model-quota-realtime.png)
+![Cota de Modelos em Tempo Real](resources/screenshots/00-model-quota-realtime.png)
 
 ---
 
 ### 2. Visão Geral do Painel & Medidor de Orçamento
 Acompanhe o consumo total em relação ao teto de 20.000 tokens de contexto, realize buscas rápidas e acesse botões de ação imediata logo abaixo das cotas de modelos.
 
-![Visão Geral do Orçamento de Tokens](https://raw.githubusercontent.com/jrdiiaas/antigravity-customizations-manager/main/resources/screenshots/01-painel-orcamento-tokens.png)
+![Visão Geral do Orçamento de Tokens](resources/screenshots/01-painel-orcamento-tokens.png)
 
 ---
 
 ### 3. Controle de Servidores MCP
 Veja todos os servidores configurados com identificação de escopo (`GLOBAL` ou `LOCAL`) e comandos, podendo alterná-los com switches táteis suaves.
 
-![Servidores MCP com Toggles](https://raw.githubusercontent.com/jrdiiaas/antigravity-customizations-manager/main/resources/screenshots/02-servidores-mcp.png)
+![Servidores MCP com Toggles](resources/screenshots/02-servidores-mcp.png)
 
 ---
 
 ### 4. Gestão de Skills e Agentes Especialistas
 Ative apenas as skills e agentes relevantes para o momento da sua sessão de programação.
 
-![Skills e Agentes com Toggles](https://raw.githubusercontent.com/jrdiiaas/antigravity-customizations-manager/main/resources/screenshots/03-skills-agentes.png)
+![Skills e Agentes com Toggles](resources/screenshots/03-skills-agentes.png)
 
 ---
 
 ### 5. Alternador de Regras e Diretrizes
 Controle quais regras do agente devem ser injetadas a cada requisição.
 
-![Regras e Instruções](https://raw.githubusercontent.com/jrdiiaas/antigravity-customizations-manager/main/resources/screenshots/04-regras-instrucoes.png)
+![Regras e Instruções](resources/screenshots/04-regras-instrucoes.png)
 
 ---
 
@@ -131,28 +131,14 @@ Você também pode criar categorias próprias (ex.: `📊 Relatórios Financeiro
 
 ---
 
-## 🏛️ Arquitetura & Segurança
+## 🔒 Segurança, Privacidade e Integridade dos seus Dados
 
-O Gestor de Tokens IA foi construído sob rigorosa arquitetura **Model-View-Controller (MVC)**:
+O Gestor de Tokens IA opera de forma totalmente transparente e segura no seu ambiente:
 
-* **Manipulação Segura e Atômica:** Todo ajuste em arquivos de configuração (`mcp_config.json`) gera um backup automático preventivo (`.bak`).
-* **Operações Não Destrutivas:** O silenciamento de skills e regras utiliza convenção padronizada de sufixo `.disabled`, preservando integralmente seu código e configurações originais.
-* **Sincronização em Tempo Real:** Watchers de arquivo nativos atualizam o painel caso qualquer configuração seja alterada externamente.
-
----
-
-## 🤖 Pipeline de CI/CD & Publicação Contínua (GitHub Actions)
-
-O projeto conta com automação de ponta a ponta via **GitHub Actions** (`.github/workflows/publish.yml`):
-
-* **Gatilhos de Publicação:**
-  * **Nova Release:** Ao publicar uma release no GitHub, o pacote `.vsix` é construído e enviado automaticamente.
-  * **Tags Git:** Ao enviar uma tag versionada (`git tag v1.0.3 && git push origin v1.0.3`).
-  * **Disparo Manual:** Pela aba **Actions > Publish to Open VSX > Run workflow**.
-* **Configuração da Secret no GitHub:**
-  * No repositório, acesse `Settings > Secrets and variables > Actions > New repository secret`.
-  * Nome do Segredo: `OVSX_PAT`
-  * Valor: Seu Personal Access Token do Open VSX Registry.
+* **100% Local e Privado:** Não coleta telemetria, não envia dados para servidores externos e não faz chamadas de rede. Todo o cálculo e gerenciamento acontecem exclusivamente na sua máquina.
+* **Backup Automático Preventivo:** Toda alteração no arquivo de configurações de ferramentas (`mcp_config.json`) gera automaticamente uma cópia de segurança (`.bak`).
+* **Silenciamento Não Destrutivo:** Ao desativar uma skill ou regra, a extensão adiciona a terminação `.disabled` ao arquivo ou pasta, preservando 100% do seu conteúdo e histórico intactos.
+* **Sincronização em Tempo Real:** Detectores de alteração de arquivo nativos (*file watchers*) mantêm o painel sincronizado se você alterar arquivos externamente pelo terminal ou editor.
 
 ---
 
@@ -160,6 +146,7 @@ O projeto conta com automação de ponta a ponta via **GitHub Actions** (`.githu
 
 * **Repositório Oficial:** [github.com/jrdiiaas/antigravity-customizations-manager](https://github.com/jrdiiaas/antigravity-customizations-manager)
 * **Reportar Problemas & Sugestões (Issues):** [github.com/jrdiiaas/antigravity-customizations-manager/issues](https://github.com/jrdiiaas/antigravity-customizations-manager/issues)
+* **Guia de Contribuição & CI/CD:** [CONTRIBUTING.md](CONTRIBUTING.md)
 * **Escola SINC:** [escolasinc.com.br](https://escolasinc.com.br)
 * **Autor:** Alexandre Sousa Dias Junior / Escola SINC
 * **Licença:** MIT (Código Aberto e Gratuito)

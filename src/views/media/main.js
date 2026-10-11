@@ -1,21 +1,29 @@
-// Script do cliente da Webview
+// Script do cliente da Webview - Gestor de Tokens IA v2.1.0
 (function () {
   const vscode = acquireVsCodeApi();
 
   let state = {
     mcpServers: [],
     skills: [],
+    skillCategories: [],
     agents: [],
+    agentCategories: [],
     rules: [],
     stats: null,
     quota: null,
+    availableCategories: [],
     searchQuery: '',
     openSections: {
       mcp: true,
       skills: false,
       agents: false,
       rules: false
-    }
+    },
+    openCategories: {},
+    simulatorTurns: 20,
+    simulatorOpen: false,
+    activeDropdown: null,
+    pendingNewCategoryTarget: null
   };
 
   // Elementos DOM - Orçamento e Busca
@@ -28,22 +36,136 @@
   // Elementos DOM - Listas e Badges
   const mcpListEl = document.getElementById('mcp-list');
   const mcpBadgeEl = document.getElementById('mcp-badge');
-  const skillsListEl = document.getElementById('skills-list');
+  const skillsCategoriesContainerEl = document.getElementById('skills-categories-container');
   const skillsBadgeEl = document.getElementById('skills-badge');
-  const agentsListEl = document.getElementById('agents-list');
+  const agentsCategoriesContainerEl = document.getElementById('agents-categories-container');
   const agentsBadgeEl = document.getElementById('agents-badge');
   const rulesListEl = document.getElementById('rules-list');
   const rulesBadgeEl = document.getElementById('rules-badge');
 
-  // Inicialização de Accordions
-  document.querySelectorAll('.accordion-header').forEach(header => {
-    header.addEventListener('click', () => {
+  // Elementos DOM - Simulador
+  const simulatorCardEl = document.getElementById('simulator-card');
+  const simulatorToggleEl = document.getElementById('simulator-toggle');
+  const simTurnsEl = document.getElementById('sim-turns');
+  const simRestEl = document.getElementById('sim-rest');
+  const simTotalEl = document.getElementById('sim-total');
+  const simulatorBadgeEl = document.getElementById('simulator-badge');
+
+  // Elementos DOM - Modal Nova Categoria
+  const newCategoryModalEl = document.getElementById('new-category-modal');
+  const newCategoryInputEl = document.getElementById('new-category-input');
+  const modalCancelBtn = document.getElementById('modal-cancel');
+  const modalConfirmBtn = document.getElementById('modal-confirm');
+
+  // Inicialização de Accordions Principais
+  document.querySelectorAll('.accordion-section > .accordion-header').forEach(header => {
+    header.addEventListener('click', (e) => {
+      // Ignora clique se clicou em botão de ação do header (ex.: ↺ Padrão)
+      if (e.target.closest('.btn-text-action')) return;
+
       const section = header.parentElement;
       const sectionId = section.dataset.section;
       section.classList.toggle('open');
       state.openSections[sectionId] = section.classList.contains('open');
     });
   });
+
+  // Toggle do Simulador Acumulado
+  if (simulatorToggleEl) {
+    simulatorToggleEl.addEventListener('click', () => {
+      state.simulatorOpen = !state.simulatorOpen;
+      simulatorCardEl.classList.toggle('open', state.simulatorOpen);
+    });
+  }
+
+  // Controles de Turns do Simulador
+  document.querySelectorAll('.btn-step').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.btn-step').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.simulatorTurns = parseInt(btn.dataset.turns, 10) || 20;
+      renderSimulator();
+    });
+  });
+
+  // Botões de Restaurar Todas as Categorias
+  const resetSkillsBtn = document.getElementById('btn-reset-skills-categories');
+  if (resetSkillsBtn) {
+    resetSkillsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      vscode.postMessage({ command: 'resetAllCategories', type: 'skills' });
+    });
+  }
+
+  const resetAgentsBtn = document.getElementById('btn-reset-agents-categories');
+  if (resetAgentsBtn) {
+    resetAgentsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      vscode.postMessage({ command: 'resetAllCategories', type: 'agents' });
+    });
+  }
+
+  // Modal Nova Categoria
+  if (modalCancelBtn) {
+    modalCancelBtn.addEventListener('click', () => {
+      closeNewCategoryModal();
+    });
+  }
+
+  if (modalConfirmBtn) {
+    modalConfirmBtn.addEventListener('click', () => {
+      confirmNewCategory();
+    });
+  }
+
+  if (newCategoryInputEl) {
+    newCategoryInputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') confirmNewCategory();
+      if (e.key === 'Escape') closeNewCategoryModal();
+    });
+  }
+
+  function openNewCategoryModal(targetType, targetItemName) {
+    state.pendingNewCategoryTarget = { type: targetType, itemName: targetItemName };
+    newCategoryInputEl.value = '';
+    newCategoryModalEl.classList.remove('hidden');
+    newCategoryInputEl.focus();
+  }
+
+  function closeNewCategoryModal() {
+    newCategoryModalEl.classList.add('hidden');
+    state.pendingNewCategoryTarget = null;
+  }
+
+  function confirmNewCategory() {
+    const val = newCategoryInputEl.value.trim();
+    if (!val) return;
+
+    vscode.postMessage({ command: 'createCategory', categoryName: val });
+
+    if (state.pendingNewCategoryTarget) {
+      vscode.postMessage({
+        command: 'moveItemCategory',
+        type: state.pendingNewCategoryTarget.type,
+        itemName: state.pendingNewCategoryTarget.itemName,
+        category: val
+      });
+    }
+
+    closeNewCategoryModal();
+  }
+
+  // Fecha dropdowns se clicar fora
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.chip-category-wrapper')) {
+      closeAllDropdowns();
+    }
+  });
+
+  function closeAllDropdowns() {
+    document.querySelectorAll('.category-dropdown').forEach(d => d.remove());
+    state.activeDropdown = null;
+  }
 
   // Busca em tempo real
   searchInputEl.addEventListener('input', (e) => {
@@ -67,9 +189,12 @@
       case 'updateData':
         state.mcpServers = message.mcpServers || [];
         state.skills = message.skills || [];
+        state.skillCategories = message.skillCategories || [];
         state.agents = message.agents || [];
+        state.agentCategories = message.agentCategories || [];
         state.rules = message.rules || [];
         state.stats = message.stats || null;
+        state.availableCategories = message.availableCategories || [];
         if (message.quota) {
           state.quota = message.quota;
         }
@@ -92,6 +217,7 @@
   function updateUI() {
     renderStats();
     renderQuota();
+    renderSimulator();
     renderLists();
   }
 
@@ -120,16 +246,14 @@
       percentEl.textContent = `${percentage}%`;
       descEl.textContent = bucket.description || (percentage >= 100 ? 'Seu limite está 100% disponível.' : '');
 
-      // Atualiza o anel de progresso SVG circular
       ringEl.setAttribute('stroke-dasharray', `${percentage}, 100`);
 
-      // Cores semânticas oficiais do Antigravity
       if (percentage > 50) {
-        ringEl.style.stroke = '#4ade80'; // Verde
+        ringEl.style.stroke = '#4ade80';
       } else if (percentage > 15) {
-        ringEl.style.stroke = '#fbbf24'; // Amarelo/Laranja
+        ringEl.style.stroke = '#fbbf24';
       } else {
-        ringEl.style.stroke = '#ef4444'; // Vermelho
+        ringEl.style.stroke = '#ef4444';
       }
     };
 
@@ -185,17 +309,32 @@
     }
   }
 
+  function renderSimulator() {
+    if (!state.stats) return;
+    const totalTokens = state.stats.totalTokens || 0;
+    const turns = state.simulatorTurns || 20;
+    const accumulated = totalTokens * turns;
+
+    if (simTurnsEl) simTurnsEl.textContent = turns;
+    if (simRestEl) simRestEl.textContent = totalTokens.toLocaleString('pt-BR');
+    if (simTotalEl) simTotalEl.textContent = accumulated.toLocaleString('pt-BR');
+    if (simulatorBadgeEl) simulatorBadgeEl.textContent = `${turns} msgs (~${accumulated.toLocaleString('pt-BR')})`;
+  }
+
   function renderLists() {
     renderMcpList();
-    renderSkillsList();
-    renderAgentsList();
+    renderSkillsCategories();
+    renderAgentsCategories();
     renderRulesList();
   }
 
+  /**
+   * Renderiza lista de servidores MCP com layout do Section 7
+   */
   function renderMcpList() {
     const query = state.searchQuery;
     const filtered = state.mcpServers.filter(s =>
-      !query || s.name.toLowerCase().includes(query) || (s.command && s.command.toLowerCase().includes(query))
+      !query || s.name.toLowerCase().includes(query) || (s.command && s.command.toLowerCase().includes(query)) || (s.shortDesc && s.shortDesc.toLowerCase().includes(query))
     );
 
     if (filtered.length === 0) {
@@ -206,15 +345,23 @@
     mcpListEl.innerHTML = filtered.map(server => {
       const scopeLabel = server.scope === 'workspace' ? 'LOCAL' : 'GLOBAL';
       const scopeClass = server.scope === 'workspace' ? 'workspace' : 'global';
+      const toolsCountTag = server.toolsCount > 0 ? `<span class="tag-meta" title="${server.toolsCount} ferramentas detectadas">${server.toolsCount} ferramentas</span>` : '';
+      const cost = server.cost || { restLabel: 'Repouso ~280 tok/msg', activeLabel: '~300 + resposta' };
+
       return `
       <div class="item-row">
         <div class="item-info">
           <div class="item-name" title="${escapeHtml(server.name)}">${escapeHtml(server.name)}</div>
           <div class="item-tags">
             <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
+            ${toolsCountTag}
           </div>
           <div class="item-desc" title="${escapeHtml(server.command + ' ' + (server.args || ''))}">
-            ${escapeHtml(server.command)} ${escapeHtml(server.args || '')}
+            ${escapeHtml(server.shortDesc || server.command)}
+          </div>
+          <div class="item-cost-row">
+            <span class="cost-pill rest" title="Custo de repouso: cobrado em cada mensagem">${escapeHtml(cost.restLabel)}</span>
+            <span class="cost-pill active" title="Custo em uso: cobrado pontualmente quando a ferramenta é chamada">Em uso ${escapeHtml(cost.activeLabel)}</span>
           </div>
         </div>
         <label class="switch">
@@ -240,119 +387,337 @@
     });
   }
 
-  function renderSkillsList() {
+  /**
+   * Renderiza categorias aninhadas de Skills em acordeão (Section 9.4 e 9.5)
+   */
+  function renderSkillsCategories() {
     const query = state.searchQuery;
-    const filtered = state.skills.filter(s =>
-      !query ||
-      s.name.toLowerCase().includes(query) ||
-      s.cleanName.toLowerCase().includes(query) ||
-      (s.pluginName && s.pluginName.toLowerCase().includes(query)) ||
-      (s.description && s.description.toLowerCase().includes(query))
-    );
+    const categories = state.skillCategories || [];
 
-    if (filtered.length === 0) {
-      skillsListEl.innerHTML = `<div class="empty-state">Nenhuma skill encontrada</div>`;
+    // Filtra itens dentro de cada categoria
+    const filteredCategories = categories.map(cat => {
+      const filteredItems = cat.items.filter(s =>
+        !query ||
+        s.name.toLowerCase().includes(query) ||
+        s.cleanName.toLowerCase().includes(query) ||
+        (s.pluginName && s.pluginName.toLowerCase().includes(query)) ||
+        (s.description && s.description.toLowerCase().includes(query)) ||
+        (s.shortDesc && s.shortDesc.toLowerCase().includes(query)) ||
+        cat.name.toLowerCase().includes(query)
+      );
+      return {
+        ...cat,
+        filteredItems
+      };
+    }).filter(cat => cat.filteredItems.length > 0);
+
+    if (filteredCategories.length === 0) {
+      skillsCategoriesContainerEl.innerHTML = `<div class="empty-state">Nenhuma skill encontrada</div>`;
       return;
     }
 
-    skillsListEl.innerHTML = filtered.map(skill => {
-      const scopeLabel = skill.isPlugin ? `PLUGIN: ${skill.pluginName}` : (skill.scope === 'workspace' ? 'LOCAL' : 'GLOBAL');
-      const scopeClass = skill.isPlugin ? 'plugin' : (skill.scope === 'workspace' ? 'workspace' : 'global');
+    skillsCategoriesContainerEl.innerHTML = filteredCategories.map(cat => {
+      const catKey = `skills:${cat.name}`;
+      // Abre automaticamente se estiver em busca ativa
+      const isOpen = Boolean(query) || Boolean(state.openCategories[catKey]);
+      const allActive = cat.activeCount > 0 && cat.activeCount === cat.totalCount;
+
       return `
-      <div class="item-row">
-        <div class="item-info">
-          <div class="item-name" title="${escapeHtml(skill.name)}">${escapeHtml(skill.name)}</div>
-          <div class="item-tags">
-            <span class="tag-scope ${scopeClass}">${escapeHtml(scopeLabel)}</span>
+      <div class="category-group ${isOpen ? 'open' : ''}" data-cat-key="${escapeHtml(catKey)}">
+        <div class="category-header">
+          <div class="category-title-area">
+            <span class="category-title" title="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</span>
           </div>
-          <div class="item-desc" title="${escapeHtml(skill.description)}">${escapeHtml(skill.description)}</div>
+          <div class="category-meta">
+            <span class="badge-tokens" title="Consumo total em repouso dos itens ativos desta categoria">~${cat.totalTokens.toLocaleString('pt-BR')} tok</span>
+            <span class="badge-count">${cat.activeCount}/${cat.totalCount}</span>
+            <label class="switch mini" title="Ligar ou desligar todos os itens desta categoria">
+              <input type="checkbox" class="category-toggle" data-cat-name="${escapeHtml(cat.name)}" data-type="skills" ${cat.activeCount > 0 ? 'checked' : ''}>
+              <span class="slider"></span>
+            </label>
+            <svg class="chevron mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
         </div>
-        <label class="switch">
-          <input type="checkbox" data-type="skill" data-id="${escapeHtml(skill.id)}" ${skill.enabled ? 'checked' : ''}>
-          <span class="slider"></span>
-        </label>
+        <div class="category-content">
+          <div class="items-list">
+            ${cat.filteredItems.map(skill => renderSkillItemHtml(skill)).join('')}
+          </div>
+        </div>
       </div>
-    `;
+      `;
     }).join('');
 
-    skillsListEl.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    bindCategoryEvents(skillsCategoriesContainerEl, 'skills');
+  }
+
+  function renderSkillItemHtml(skill) {
+    const scopeLabel = skill.isPlugin ? `PLUGIN: ${skill.pluginName}` : (skill.scope === 'workspace' ? 'LOCAL' : 'GLOBAL');
+    const scopeClass = skill.isPlugin ? 'plugin' : (skill.scope === 'workspace' ? 'workspace' : 'global');
+    const cost = skill.cost || { restLabel: 'Repouso ~60 tok/msg', activeLabel: '+ SKILL.md' };
+    const customMarker = skill.isCustomCategory ? `<span class="tag-custom-marker" title="Classificação personalizada pelo usuário">✎</span>` : '';
+
+    return `
+    <div class="item-row">
+      <div class="item-info">
+        <div class="item-name" title="${escapeHtml(skill.name)}">${escapeHtml(skill.name)}</div>
+        <div class="item-tags">
+          <span class="tag-scope ${scopeClass}">${escapeHtml(scopeLabel)}</span>
+          <div class="chip-category-wrapper">
+            <button class="chip-category" data-type="skills" data-name="${escapeHtml(skill.cleanName)}" title="Clique para mudar a categoria desta skill">
+              ${escapeHtml(skill.category)} ▾${customMarker}
+            </button>
+          </div>
+        </div>
+        <div class="item-desc" title="${escapeHtml(skill.description)}">${escapeHtml(skill.shortDesc || skill.description)}</div>
+        <div class="item-cost-row">
+          <span class="cost-pill rest" title="Custo de repouso: cobrado em cada mensagem">${escapeHtml(cost.restLabel)}</span>
+          <span class="cost-pill active" title="Custo em uso: executado ao ativar a skill">Em uso ${escapeHtml(cost.activeLabel)}</span>
+        </div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" data-type="skill" data-id="${escapeHtml(skill.id)}" ${skill.enabled ? 'checked' : ''}>
+        <span class="slider"></span>
+      </label>
+    </div>
+    `;
+  }
+
+  /**
+   * Renderiza categorias aninhadas de Subagentes em acordeão
+   */
+  function renderAgentsCategories() {
+    const query = state.searchQuery;
+    const categories = state.agentCategories || [];
+
+    const filteredCategories = categories.map(cat => {
+      const filteredItems = cat.items.filter(a =>
+        !query ||
+        a.name.toLowerCase().includes(query) ||
+        a.cleanName.toLowerCase().includes(query) ||
+        (a.description && a.description.toLowerCase().includes(query)) ||
+        (a.shortDesc && a.shortDesc.toLowerCase().includes(query)) ||
+        (a.skills && a.skills.some(s => s.toLowerCase().includes(query))) ||
+        cat.name.toLowerCase().includes(query)
+      );
+      return {
+        ...cat,
+        filteredItems
+      };
+    }).filter(cat => cat.filteredItems.length > 0);
+
+    if (filteredCategories.length === 0) {
+      agentsCategoriesContainerEl.innerHTML = `<div class="empty-state">Nenhum agente encontrado</div>`;
+      return;
+    }
+
+    agentsCategoriesContainerEl.innerHTML = filteredCategories.map(cat => {
+      const catKey = `agents:${cat.name}`;
+      const isOpen = Boolean(query) || Boolean(state.openCategories[catKey]);
+
+      return `
+      <div class="category-group ${isOpen ? 'open' : ''}" data-cat-key="${escapeHtml(catKey)}">
+        <div class="category-header">
+          <div class="category-title-area">
+            <span class="category-title" title="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</span>
+          </div>
+          <div class="category-meta">
+            <span class="badge-tokens" title="Consumo total em repouso dos agentes ativos desta categoria">~${cat.totalTokens.toLocaleString('pt-BR')} tok</span>
+            <span class="badge-count">${cat.activeCount}/${cat.totalCount}</span>
+            <label class="switch mini" title="Ligar ou desligar todos os agentes desta categoria">
+              <input type="checkbox" class="category-toggle" data-cat-name="${escapeHtml(cat.name)}" data-type="agents" ${cat.activeCount > 0 ? 'checked' : ''}>
+              <span class="slider"></span>
+            </label>
+            <svg class="chevron mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
+        <div class="category-content">
+          <div class="items-list">
+            ${cat.filteredItems.map(agent => renderAgentItemHtml(agent)).join('')}
+          </div>
+        </div>
+      </div>
+      `;
+    }).join('');
+
+    bindCategoryEvents(agentsCategoriesContainerEl, 'agents');
+  }
+
+  function renderAgentItemHtml(agent) {
+    const scopeLabel = agent.scope === 'workspace' ? 'LOCAL' : 'GLOBAL';
+    const scopeClass = agent.scope === 'workspace' ? 'workspace' : 'global';
+    const skillsCountTag = agent.skills && agent.skills.length > 0 ? `<span class="tag-meta" title="Skills: ${escapeHtml(agent.skills.join(', '))}">${agent.skills.length} skills</span>` : '';
+    const cost = agent.cost || { restLabel: 'Repouso ~100 tok/msg', activeLabel: '+ .md' };
+    const customMarker = agent.isCustomCategory ? `<span class="tag-custom-marker" title="Classificação personalizada pelo usuário">✎</span>` : '';
+
+    return `
+    <div class="item-row">
+      <div class="item-info">
+        <div class="item-name" title="${escapeHtml(agent.name)}">${escapeHtml(agent.name)}</div>
+        <div class="item-tags">
+          <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
+          ${skillsCountTag}
+          <div class="chip-category-wrapper">
+            <button class="chip-category" data-type="agents" data-name="${escapeHtml(agent.cleanName)}" title="Clique para mudar a categoria deste agente">
+              ${escapeHtml(agent.category)} ▾${customMarker}
+            </button>
+          </div>
+        </div>
+        <div class="item-desc" title="${escapeHtml(agent.description)}">
+          ${escapeHtml(agent.shortDesc || agent.description)}
+        </div>
+        <div class="item-cost-row">
+          <span class="cost-pill rest" title="Custo de repouso: cobrado em cada mensagem">${escapeHtml(cost.restLabel)}</span>
+          <span class="cost-pill active" title="Custo em uso: executado ao despachar o agente">Em uso ${escapeHtml(cost.activeLabel)}</span>
+        </div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" data-type="agent" data-id="${escapeHtml(agent.id)}" ${agent.enabled ? 'checked' : ''}>
+        <span class="slider"></span>
+      </label>
+    </div>
+    `;
+  }
+
+  /**
+   * Vincula eventos de clique de acordeão, switches e dropdowns de categoria
+   */
+  function bindCategoryEvents(containerEl, type) {
+    // Header clique do acordeão de categoria
+    containerEl.querySelectorAll('.category-header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        if (e.target.closest('.switch') || e.target.closest('input')) return;
+        const group = header.closest('.category-group');
+        const catKey = group.dataset.catKey;
+        group.classList.toggle('open');
+        state.openCategories[catKey] = group.classList.contains('open');
+      });
+    });
+
+    // Toggle em lote da categoria inteira
+    containerEl.querySelectorAll('.category-toggle').forEach(checkbox => {
       checkbox.addEventListener('change', (e) => {
+        const categoryName = e.target.dataset.catName;
+        const targetType = e.target.dataset.type;
+        const enabled = e.target.checked;
+        vscode.postMessage({
+          command: 'toggleCategory',
+          categoryName,
+          type: targetType,
+          enabled
+        });
+      });
+    });
+
+    // Checkbox individual do item
+    containerEl.querySelectorAll('input[type="checkbox"]:not(.category-toggle)').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const itemType = e.target.dataset.type;
         const id = e.target.dataset.id;
         const enabled = e.target.checked;
-        const skill = state.skills.find(s => s.id === id);
-        if (skill) {
-          vscode.postMessage({
-            command: 'toggleSkill',
-            skill,
-            enabled
-          });
+
+        if (itemType === 'skill') {
+          const skill = state.skills.find(s => s.id === id);
+          if (skill) {
+            vscode.postMessage({ command: 'toggleSkill', skill, enabled });
+          }
+        } else if (itemType === 'agent') {
+          const agent = state.agents.find(a => a.id === id);
+          if (agent) {
+            vscode.postMessage({ command: 'toggleAgent', agent, enabled });
+          }
+        }
+      });
+    });
+
+    // Clique no chip de categoria (abre menu dropdown)
+    containerEl.querySelectorAll('.chip-category').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const itemName = chip.dataset.name;
+        const itemType = chip.dataset.type;
+        openCategoryDropdown(chip, itemType, itemName);
+      });
+    });
+  }
+
+  /**
+   * Abre menu flutuante para troca rápida de categoria (Section 9.5)
+   */
+  function openCategoryDropdown(chipEl, type, itemName) {
+    closeAllDropdowns();
+
+    const wrapper = chipEl.closest('.chip-category-wrapper');
+    if (!wrapper) return;
+
+    // Encontra item atual
+    const list = type === 'skills' ? state.skills : state.agents;
+    const currentItem = list.find(x => x.cleanName === itemName);
+    const currentCategory = currentItem ? currentItem.category : '';
+    const isCustom = currentItem ? currentItem.isCustomCategory : false;
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'category-dropdown';
+
+    const categories = state.availableCategories || [];
+    let html = '';
+
+    for (const cat of categories) {
+      const isActive = cat === currentCategory;
+      html += `
+        <div class="category-dropdown-item ${isActive ? 'active' : ''}" data-cat="${escapeHtml(cat)}">
+          <span>${escapeHtml(cat)}</span>
+          ${isActive ? '✓' : ''}
+        </div>
+      `;
+    }
+
+    html += `<div class="category-dropdown-divider"></div>`;
+    html += `<div class="category-dropdown-item action" data-action="new">＋ Nova categoria…</div>`;
+
+    if (isCustom) {
+      html += `<div class="category-dropdown-item reset" data-action="reset">↺ Restaurar padrão</div>`;
+    }
+
+    dropdown.innerHTML = html;
+    wrapper.appendChild(dropdown);
+    state.activeDropdown = { type, itemName, element: dropdown };
+
+    // Eventos dos itens do dropdown
+    dropdown.querySelectorAll('.category-dropdown-item').forEach(itemEl => {
+      itemEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = itemEl.dataset.action;
+        const chosenCat = itemEl.dataset.cat;
+
+        if (action === 'new') {
+          closeAllDropdowns();
+          openNewCategoryModal(type, itemName);
+        } else if (action === 'reset') {
+          closeAllDropdowns();
+          vscode.postMessage({ command: 'resetItemCategory', type, itemName });
+        } else if (chosenCat) {
+          closeAllDropdowns();
+          vscode.postMessage({ command: 'moveItemCategory', type, itemName, category: chosenCat });
         }
       });
     });
   }
 
-  function renderAgentsList() {
-    const query = state.searchQuery;
-    const filtered = state.agents.filter(a =>
-      !query ||
-      a.name.toLowerCase().includes(query) ||
-      a.cleanName.toLowerCase().includes(query) ||
-      (a.description && a.description.toLowerCase().includes(query)) ||
-      (a.skills && a.skills.some(s => s.toLowerCase().includes(query)))
-    );
-
-    if (filtered.length === 0) {
-      agentsListEl.innerHTML = `<div class="empty-state">Nenhum agente encontrado</div>`;
-      return;
-    }
-
-    agentsListEl.innerHTML = filtered.map(agent => {
-      const scopeLabel = agent.scope === 'workspace' ? 'LOCAL' : 'GLOBAL';
-      const scopeClass = agent.scope === 'workspace' ? 'workspace' : 'global';
-      const skillsCount = agent.skills && agent.skills.length > 0 ? `<span class="tag-meta" title="Skills: ${escapeHtml(agent.skills.join(', '))}">${agent.skills.length} skills</span>` : '';
-      return `
-      <div class="item-row">
-        <div class="item-info">
-          <div class="item-name" title="${escapeHtml(agent.name)}">${escapeHtml(agent.name)}</div>
-          <div class="item-tags">
-            <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
-            ${skillsCount}
-          </div>
-          <div class="item-desc" title="${escapeHtml(agent.description)}">
-            ${escapeHtml(agent.description)}
-          </div>
-        </div>
-        <label class="switch">
-          <input type="checkbox" data-type="agent" data-id="${escapeHtml(agent.id)}" ${agent.enabled ? 'checked' : ''}>
-          <span class="slider"></span>
-        </label>
-      </div>
-    `;
-    }).join('');
-
-    agentsListEl.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-      checkbox.addEventListener('change', (e) => {
-        const id = e.target.dataset.id;
-        const enabled = e.target.checked;
-        const agent = state.agents.find(a => a.id === id);
-        if (agent) {
-          vscode.postMessage({
-            command: 'toggleAgent',
-            agent,
-            enabled
-          });
-        }
-      });
-    });
-  }
-
+  /**
+   * Renderiza lista de Regras
+   */
   function renderRulesList() {
     const query = state.searchQuery;
     const filtered = state.rules.filter(r =>
       !query ||
       r.title.toLowerCase().includes(query) ||
       r.baseName.toLowerCase().includes(query) ||
-      (r.snippet && r.snippet.toLowerCase().includes(query))
+      (r.snippet && r.snippet.toLowerCase().includes(query)) ||
+      (r.shortDesc && r.shortDesc.toLowerCase().includes(query))
     );
 
     if (filtered.length === 0) {
@@ -363,6 +728,11 @@
     rulesListEl.innerHTML = filtered.map(rule => {
       const scopeLabel = rule.scope === 'workspace' ? 'LOCAL' : 'GLOBAL';
       const scopeClass = rule.scope === 'workspace' ? 'workspace' : 'global';
+      const modeTag = rule.isConditional
+        ? `<span class="tag-conditional" title="Regra condicional: carregada apenas quando acionada">Condicional</span>`
+        : `<span class="tag-always" title="Regra sempre ativa: injetada no início do contexto">Always-on</span>`;
+      const cost = rule.cost || { restLabel: 'Repouso ~300 tok/msg', activeLabel: 'Já carregada no repouso' };
+
       return `
       <div class="item-row">
         <div class="item-info">
@@ -370,8 +740,13 @@
           <div class="item-tags">
             <span class="tag-filename" title="Arquivo: ${escapeHtml(rule.baseName)}">${escapeHtml(rule.baseName)}</span>
             <span class="tag-scope ${scopeClass}">${scopeLabel}</span>
+            ${modeTag}
           </div>
-          <div class="item-desc" title="${escapeHtml(rule.snippet)}">${escapeHtml(rule.snippet)}</div>
+          <div class="item-desc" title="${escapeHtml(rule.snippet)}">${escapeHtml(rule.shortDesc || rule.snippet)}</div>
+          <div class="item-cost-row">
+            <span class="cost-pill rest" title="Custo de repouso: cobrado em cada mensagem">${escapeHtml(cost.restLabel)}</span>
+            <span class="cost-pill active" title="Custo em uso: acionamento sob demanda">Em uso ${escapeHtml(cost.activeLabel)}</span>
+          </div>
         </div>
         <label class="switch">
           <input type="checkbox" data-type="rule" data-id="${escapeHtml(rule.id)}" ${rule.enabled ? 'checked' : ''}>

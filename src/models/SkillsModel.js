@@ -36,12 +36,29 @@ class SkillsModel {
         description = descMatch[2].trim().replace(/^["']|["']$/g, '').replace(/\n\s+/g, ' ');
       }
 
+      const catMatch = frontmatter.match(/^category:\s*(.+)$/m);
+      let category = '';
+      if (catMatch) {
+        category = catMatch[1].trim().replace(/^["']|["']$/g, '');
+      }
+
+      let fileSize = 0;
+      try {
+        fileSize = fs.statSync(filePath).size;
+      } catch (_) {}
+
       return {
         name: name || path.basename(path.dirname(filePath)),
-        description: description || 'Skill especializada'
+        description: description || 'Skill especializada',
+        category,
+        fileSize
       };
     } catch (_) {
-      return { name: path.basename(path.dirname(filePath)), description: 'Não foi possível ler metadados' };
+      let fileSize = 0;
+      try {
+        fileSize = fs.statSync(filePath).size;
+      } catch (_) {}
+      return { name: path.basename(path.dirname(filePath)), description: 'Não foi possível ler metadados', category: '', fileSize };
     }
   }
 
@@ -95,7 +112,9 @@ class SkillsModel {
           isPlugin,
           pluginName: pluginName || '',
           enabled: isEnabled,
-          description: meta.description
+          description: meta.description,
+          category: meta.category,
+          fileSize: meta.fileSize
         });
       }
     } catch (err) {

@@ -64,6 +64,62 @@ Controle quais regras do agente devem ser injetadas a cada requisição.
 
 ---
 
+## 💡 Entendendo o Consumo de Tokens (v2.1.0)
+
+Para manter o modelo de IA focado, ágil e dentro do teto de contexto sem surpresas, o Gestor de Tokens IA discrimina exatamente quanto cada item consome:
+
+### 1. O que é um Token e a Taxa de Conversão
+Um **token** é o fragmento básico de texto processado pelos modelos de linguagem (geralmente uma sílaba ou palavra curta). Na prática com linguagens naturais e códigos Markdown, adotamos o padrão de processamento de linguagem natural:
+$$\text{1 token} \approx 3{,}8 \text{ caracteres (cerca de 4 letras)}$$
+
+### 2. Repouso vs. Uso Ativo (A Analogia)
+* 🏠 **Repouso (Aluguel Fixo):** Tokens injetados no pre-prompt em **todas as mensagens** que você envia para a IA. Mesmo que a ferramenta nunca seja executada, esse custo é cobrado a cada turno de conversa.
+* ⚡ **Em Uso Ativo (Conta de Consumo):** Tokens adicionais consumidos **apenas quando o item é efetivamente acionado** pelo agente para ler documentações ou executar ferramentas.
+
+### 3. Tabela Comparativa de Cálculo por Tipo
+
+| Tipo de Customização | Custo em Repouso (por turno) | Custo em Uso Ativo (quando executado) |
+| :--- | :--- | :--- |
+| **MCP Lazy** (Padrão Antigravity) | `~8 tokens` por ferramenta (apenas o nome da tool) | `~300 tokens` de schema + resposta (`500` a `50.000+` tokens) |
+| **MCP Eager** (Carregamento Imediato) | Schema JSON completo de cada ferramenta (`350` a `800` tokens) | Resposta pontual da execução (`500` a `5.000` tokens) |
+| **Skill** | Nome + descrição no catálogo (`~40` + tamanho da descrição / 3,8) | Leitura do `SKILL.md` (`200` a `2.500` tokens) + scripts chamados |
+| **Subagente** | Declaração de persona e lista de skills (`~80` + desc / 3,8) | Leitura do arquivo do agente + skills declaradas |
+| **Regra Always-on** (Sempre Ativa) | Arquivo Markdown integral (`tamanho / 3,8`) | Zero custo extra (o arquivo já reside integralmente na memória) |
+| **Regra Condicional** (Sob Demanda) | Apenas o resumo e gatilho (`~25` a `60` tokens) | Arquivo integral carregado somente se a condição for satisfeita |
+
+> ℹ️ **Significado do símbolo `~` e Faixas (Mín–Máx):** Como os tokenizadores variam ligeiramente entre modelos (Gemini Flash vs Gemini Pro vs Claude), todos os números são precedidos por `~` (aproximação técnica). O uso ativo é expresso em faixa para representar respostas curtas ou volumosas.
+
+### 4. Custo Acumulado na Conversa
+O custo de repouso é **recobrado a cada nova mensagem** do chat.
+* **Exemplo Real:** Se seus itens em repouso somam `220 tokens/msg`, uma conversa com **20 mensagens** acumulará:
+  $$20 \text{ mensagens} \times 220 \text{ tokens} = 4.400 \text{ tokens}$$
+  somente para sustentar esses itens ativos na janela de contexto.
+* O simulador integrado no painel permite testar projeções para 5, 10, 20 e 50 mensagens com 1 clique.
+
+### 5. Categorias em Acordeão e Organização Visual
+Skills e Subagentes são organizados em grupos amigáveis de fácil entendimento:
+* 🎨 **Visual e Design**
+* 🖥️ **Sites e Apps (Frontend)**
+* ⚙️ **Servidor e Dados (Backend)**
+* 🧪 **Testes e Qualidade**
+* 🔒 **Segurança**
+* 🚀 **Publicação e Servidores**
+* 📈 **Marketing e Busca (SEO)**
+* 🧭 **Planejamento e Organização**
+* 🤖 **Trabalho em Equipe de IA**
+* 📦 **Outros**
+
+**Hierarquia de Classificação:**
+1. **Escolha Manual do Usuário (Nível 0):** Clique no chip da categoria ao lado do item para movê-lo na hora. Essa preferência é salva no IDE e prevalece sobre qualquer regra.
+2. **Catálogo Embutido:** Mapeamento pré-configurado de ferramentas e skills conhecidas.
+3. **Frontmatter YAML:** Campo `category: "Nome da Categoria"` no arquivo `.md`.
+4. **Heurística Textual:** Detecção de termos-chave na descrição.
+5. **Fallback:** `📦 Outros`.
+
+Você também pode criar categorias próprias (ex.: `📊 Relatórios Financeiros`) diretamente pela interface através da opção **"＋ Nova categoria…"**.
+
+---
+
 ## 🚀 Guia Rápido de Uso
 
 1. Após instalar a extensão, localize o **ícone de Raio (⚡)** na sua barra lateral (Activity Bar).

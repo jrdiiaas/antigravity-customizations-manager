@@ -5,12 +5,15 @@ const AgentsModel = require('../models/AgentsModel');
 const RulesModel = require('../models/RulesModel');
 const ContextBudgetModel = require('../models/ContextBudgetModel');
 const QuotaModel = require('../models/QuotaModel');
+const McpToolIndexModel = require('../models/McpToolIndexModel');
+const CategoryModel = require('../models/CategoryModel');
 const WebviewHtml = require('../views/WebviewHtml');
 
 class CustomizationWebviewController {
-  constructor(extensionUri, workspaceRoot) {
+  constructor(extensionUri, workspaceRoot, globalState = null) {
     this.extensionUri = extensionUri;
     this.workspaceRoot = workspaceRoot;
+    this.globalState = globalState;
     this.view = null;
     this.quotaRefreshInterval = null;
     this.fullRefreshInterval = null;
@@ -19,6 +22,8 @@ class CustomizationWebviewController {
     this.skillsModel = new SkillsModel(this.workspaceRoot);
     this.agentsModel = new AgentsModel(this.workspaceRoot);
     this.rulesModel = new RulesModel(this.workspaceRoot);
+    this.mcpToolIndexModel = new McpToolIndexModel(this.workspaceRoot);
+    this.categoryModel = new CategoryModel(this.globalState);
 
     this.setupWatchers();
   }
@@ -89,6 +94,61 @@ class CustomizationWebviewController {
             this.rulesModel.toggleRule(data.rule, data.enabled);
             await this.refresh();
             break;
+
+          case 'toggleCategory': {
+            const { categoryName, type, enabled } = data;
+            if (type === 'skills') {
+              const skills = this.skillsModel.getAllSkills();
+              for (const skill of skills) {
+                const cat = this.categoryModel.classifyItem(skill, 'skills').category;
+                if (cat === categoryName && skill.enabled !== enabled) {
+                  this.skillsModel.toggleSkill(skill, enabled);
+                }
+              }
+            } else if (type === 'agents') {
+              const agents = this.agentsModel.getAllAgents();
+              for (const agent of agents) {
+                const cat = this.categoryModel.classifyItem(agent, 'agents').category;
+                if (cat === categoryName && agent.enabled !== enabled) {
+                  this.agentsModel.toggleAgent(agent, enabled);
+                }
+              }
+            }
+            await this.refresh();
+            break;
+          }
+
+          case 'moveItemCategory':
+            await this.categoryModel.setOverride(data.type, data.itemName, data.category);
+            await this.refresh();
+            break;
+
+          case 'resetItemCategory':
+            await this.categoryModel.resetOverride(data.type, data.itemName);
+            await this.refresh();
+            break;
+
+          case 'resetAllCategories':
+            await this.categoryModel.resetAllOverrides(data.type);
+            vscode.window.showInformationMessage('Categorias restauradas para o padrão com sucesso!');
+            await this.refresh();
+            break;
+
+          case 'createCategory':
+            if (data.categoryName && data.categoryName.trim()) {
+              await this.categoryModel.addCustomCategory(data.categoryName.trim());
+              vscode.window.showInformationMessage(`Categoria "${data.categoryName.trim()}" criada!`);
+              await this.refresh();
+            }
+            break;
+
+          case 'deleteCategory':
+            if (data.categoryName) {
+              await this.categoryModel.deleteCustomCategory(data.categoryName);
+              vscode.window.showInformationMessage(`Categoria "${data.categoryName}" removida.`);
+              await this.refresh();
+            }
+            break;
         }
       } catch (err) {
         vscode.window.showErrorMessage(`Erro no Customizations Manager: ${err.message}`);
@@ -153,18 +213,28 @@ class CustomizationWebviewController {
       const skills = this.skillsModel.getAllSkills();
       const agents = this.agentsModel.getAllAgents();
       const rules = this.rulesModel.getAllRules();
-      const stats = ContextBudgetModel.calculateStats(mcpServers, skills, rules, agents);
-      
+
+      // Calcula os custos por item e os totais globais
+      const stats = ContextBudgetModel.calculateStats(mcpServers, skills, rules, agents, this.mcpToolIndexModel);
+
+      // Agrupa skills e agentes em categorias
+      const skillCategories = this.categoryModel.groupItems(skills, 'skills');
+      const agentCategories = this.categoryModel.groupItems(agents, 'agents');
+      const availableCategories = this.categoryModel.getAllCategories();
+
       const quota = await QuotaModel.getQuota();
 
       await this.view.webview.postMessage({
         type: 'updateData',
         mcpServers,
         skills,
+        skillCategories,
         agents,
+        agentCategories,
         rules,
         stats,
-        quota
+        quota,
+        availableCategories
       });
     } catch (err) {
       console.error('[CustomizationWebviewController] Erro ao carregar dados:', err);

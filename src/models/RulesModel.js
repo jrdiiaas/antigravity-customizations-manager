@@ -34,29 +34,70 @@ class RulesModel {
 
       let title = path.basename(filePath).replace(/\.disabled$/, '');
       let snippet = '';
+      let trigger = '';
+      let description = '';
+      let isConditional = false;
+
+      // Extrai YAML frontmatter se houver
+      const match = content.match(/^---[\r\n]+([\s\S]*?)[\r\n]+---/);
+      if (match) {
+        const fm = match[1];
+        const trigMatch = fm.match(/^trigger:\s*(.+)$/m);
+        if (trigMatch) {
+          trigger = trigMatch[1].trim().replace(/^["']|["']$/g, '');
+        }
+
+        const descMatch = fm.match(/^description:\s*([>|]?)([\s\S]*?)(?=^\w+:|$)/m);
+        if (descMatch) {
+          description = descMatch[2].trim().replace(/^["']|["']$/g, '').replace(/\n\s+/g, ' ');
+        }
+
+        if (trigger) {
+          isConditional = trigger !== 'always_on';
+        } else if (fm.includes('globs:') || description) {
+          isConditional = true;
+        }
+      }
 
       for (const line of lines) {
         if (line.startsWith('---')) continue;
         if (line.startsWith('#')) {
           title = line.replace(/^#+\s*/, '');
           break;
-        } else if (!snippet && !line.startsWith('trigger:')) {
+        } else if (!snippet && !line.startsWith('trigger:') && !line.startsWith('name:')) {
           snippet = line;
         }
       }
 
-      if (!snippet && lines.length > 1) {
+      if (description) {
+        snippet = description;
+      } else if (!snippet && lines.length > 1) {
         snippet = lines.slice(1, 3).join(' ').substring(0, 80);
       }
 
+      let fileSize = 0;
+      try {
+        fileSize = fs.statSync(filePath).size;
+      } catch (_) {}
+
       return {
         title,
-        snippet: snippet || 'Regra de comportamento do agente'
+        snippet: snippet || 'Regra de comportamento do agente',
+        trigger,
+        isConditional,
+        fileSize
       };
     } catch (_) {
+      let fileSize = 0;
+      try {
+        fileSize = fs.statSync(filePath).size;
+      } catch (_) {}
       return {
         title: path.basename(filePath),
-        snippet: 'Regra ativa'
+        snippet: 'Regra ativa',
+        trigger: '',
+        isConditional: false,
+        fileSize
       };
     }
   }
@@ -97,7 +138,10 @@ class RulesModel {
           scope,
           enabled: isMd && !isDisabled,
           title: meta.title,
-          snippet: meta.snippet
+          snippet: meta.snippet,
+          isConditional: meta.isConditional,
+          trigger: meta.trigger,
+          fileSize: meta.fileSize
         });
       }
     } catch (err) {
@@ -131,7 +175,10 @@ class RulesModel {
         scope: 'global',
         enabled: isEnabled,
         title: 'GEMINI.md (Global)',
-        snippet: meta.snippet || meta.title
+        snippet: meta.snippet || meta.title,
+        isConditional: meta.isConditional,
+        trigger: meta.trigger,
+        fileSize: meta.fileSize
       });
     }
 
@@ -161,7 +208,10 @@ class RulesModel {
           scope: 'workspace',
           enabled: isEnabled,
           title: 'AGENTS.md (Workspace)',
-          snippet: meta.snippet || meta.title
+          snippet: meta.snippet || meta.title,
+          isConditional: meta.isConditional,
+          trigger: meta.trigger,
+          fileSize: meta.fileSize
         });
       }
     }

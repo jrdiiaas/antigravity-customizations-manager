@@ -7,6 +7,22 @@ e este projeto adere ao [Semantic Versioning (SemVer)](https://semver.org/lang/p
 
 ---
 
+## [2.1.0] - 2026-10-11
+
+### Adicionado
+- **Consumo Granular de Tokens por Item:** Exibição detalhada de custo de **Repouso** (tokens consumidos por mensagem no contexto) e **Em uso ativo** (faixa de variação quando o item é executado) abaixo de cada MCP, Skill, Subagente e Regra.
+- **Indexador de Ferramentas e Schemas MCP (`McpToolIndexModel`):** Inspeção dinâmica de esquemas locais de ferramentas MCP, calculando com precisão o custo de servidores lazy (~8 tokens por ferramenta em repouso) e eager (schema completo), além de contagem real de ferramentas.
+- **Catálogo Universal de Descrições MCP:** Introdução de `mcp-catalog.json` com sínteses objetivas em português (≤ 15 palavras e 1 frase) para servidores MCP públicos, com fallback automático para documentação `instructions.md`.
+- **Agrupamento em Categorias com Acordeão Aninhado:** Categorização didática em 2 níveis para Skills e Subagentes (Visual e Design, Sites e Apps, Servidor e Dados, Testes e Qualidade, Segurança, Publicação e Servidores, Marketing e Busca, Planejamento e Organização, Trabalho em Equipe, Outros).
+- **Recategorização Interativa e Persistente:** Capacidade de reorganizar qualquer item entre categorias com apenas dois cliques via menu dropdown integrado, criação de categorias personalizadas e restauração para o padrão de fábrica.
+- **Legenda Didática e Simulador de Custo Acumulado:** Seção educativa com analogias (repouso como aluguel mensal, uso ativo como conta de consumo) e simulador interativo projetando consumo em turnos conversacionais (5, 10, 20, 50 mensagens).
+
+### Corrigido
+- **Eliminação de Barra de Rolagem Secundária Interna:** Remoção de limitadores de altura (`max-height`) dos conteúdos dos acordeões, estabelecendo fluxo de rolagem único e natural gerenciado pela barra nativa da janela.
+- **Alinhamento do Seletor de Colapso do Acordeão:** Correção do mapeamento de seletores CSS (`.accordion-content`) garantindo colapso e expansão imediatos e confiáveis de todas as seções.
+
+---
+
 ## [2.0.0] - 2026-09-29
 
 ### Adicionado

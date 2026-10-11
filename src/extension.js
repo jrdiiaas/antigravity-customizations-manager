@@ -8,7 +8,7 @@ function activate(context) {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   const workspaceRoot = workspaceFolders && workspaceFolders.length > 0 ? workspaceFolders[0].uri.fsPath : '';
 
-  const controller = new CustomizationWebviewController(context.extensionUri, workspaceRoot);
+  const controller = new CustomizationWebviewController(context.extensionUri, workspaceRoot, context.globalState);
 
   // Registra o provedor da Webview no painel lateral
   context.subscriptions.push(

@@ -56,6 +56,11 @@ class AgentsModel {
           skills = skillsMatch[1].split(',').map(s => s.trim()).filter(Boolean);
         }
 
+        const categoryMatch = frontmatter.match(/^category:\s*(.+)$/m);
+        if (categoryMatch) {
+          category = categoryMatch[1].trim().replace(/^["']|["']$/g, '');
+        }
+
         const toolsMatch = frontmatter.match(/^tools:\s*(.+)$/m);
         if (toolsMatch) {
           tools = toolsMatch[1].trim();
@@ -72,19 +77,32 @@ class AgentsModel {
         }
       }
 
+      let fileSize = 0;
+      try {
+        fileSize = fs.statSync(filePath).size;
+      } catch (_) {}
+
       return {
         name,
         description: description || 'Agente especialista autônomo',
         skills,
-        tools
+        tools,
+        category: category || '',
+        fileSize
       };
     } catch (_) {
       const fallbackName = path.basename(filePath).replace(/\.disabled$/, '').replace(/\.md$/, '');
+      let fileSize = 0;
+      try {
+        fileSize = fs.statSync(filePath).size;
+      } catch (_) {}
       return {
         name: fallbackName,
         description: 'Agente especialista',
         skills: [],
-        tools: ''
+        tools: '',
+        category: '',
+        fileSize
       };
     }
   }
@@ -128,7 +146,9 @@ class AgentsModel {
           name: meta.name || cleanName,
           description: meta.description,
           skills: meta.skills,
-          tools: meta.tools
+          tools: meta.tools,
+          category: meta.category,
+          fileSize: meta.fileSize
         });
       }
     } catch (err) {

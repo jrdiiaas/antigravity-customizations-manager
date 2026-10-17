@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-REPO_DIR="/home/sinc/docker/antigravity-customizations-manager"
+REPO_DIR="/home/asjunior/docker/antigravity-customizations-manager"
 cd "$REPO_DIR"
 
 echo "=== Sincronizando Gestor de Tokens IA com GitHub ==="

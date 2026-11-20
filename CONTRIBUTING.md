@@ -32,8 +32,8 @@ O repositório possui automação completa via GitHub Actions (`.github/workflow
 * **Nova Release no GitHub:** Ao criar uma nova release oficial pela interface web.
 * **Tags Git Versionadas:** Ao enviar uma tag Git compatível com SemVer:
   ```bash
-  git tag v2.1.0
-  git push origin v2.1.0
+  git tag v2.2.0
+  git push origin v2.2.0
   ```
 * **Disparo Manual (Workflow Dispatch):** Acesse a aba **Actions > Publish to Open VSX > Run workflow** no GitHub.
 

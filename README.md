@@ -56,7 +56,7 @@ Controle quais regras do agente devem ser injetadas a cada requisição.
 
 ---
 
-## 💡 Entendendo o Consumo de Tokens (v2.1.0)
+## 💡 Entendendo o Consumo de Tokens (v2.2.0)
 
 Para manter o modelo de IA focado, ágil e dentro do teto de contexto sem surpresas, o Gestor de Tokens IA discrimina exatamente quanto cada item consome:
 

@@ -10,7 +10,10 @@ e este projeto adere ao [Semantic Versioning (SemVer)](https://semver.org/lang/p
 ## [2.2.0] - 2026-11-20
 
 ### Removido
-- **Painel de Cota de Modelos em Tempo Real (Model Quota):** Remoção completa da seção visual de cotas (`Gemini Models` e `Claude and GPT models`), do modelo de integração `QuotaModel` e do ciclo de atualização por *polling* via Language Server RPC, visto que o monitoramento de consumo de modelos foi incorporado nativamente às versões atuais do Google Antigravity IDE.
+- **Painel de Cota de Modelos em Tempo Real (`Gemini Models` e `Claude and GPT models`):** Remoção completa da seção visual de cotas, do modelo `QuotaModel` e do ciclo de atualização contínua via Language Server RPC (`RetrieveUserQuotaSummary`). Com a incorporação nativa do monitoramento de cota de modelos nas versões atuais do Google Antigravity IDE, a exibição duplicada na extensão deixou de ser necessária, permitindo eliminar consultas redundantes em segundo plano (`ps` / `ss` a cada 1 segundo), reduzir consumo de CPU/IPC e evitar alertas de desconexão do Language Server.
+
+### Modificado
+- **Documentação Visual e Interface Streamlined:** Atualização das capturas de tela oficiais e guias no `README.md` refletindo o painel focado exclusivamente no orçamento de contexto (`20.000` tokens), simulador acumulado e governança de servidores MCP, skills, subagentes e regras.
 
 ---
 

@@ -5,14 +5,13 @@ const SkillsModel = require('../src/models/SkillsModel');
 const AgentsModel = require('../src/models/AgentsModel');
 const RulesModel = require('../src/models/RulesModel');
 const ContextBudgetModel = require('../src/models/ContextBudgetModel');
-const QuotaModel = require('../src/models/QuotaModel');
 const McpToolIndexModel = require('../src/models/McpToolIndexModel');
 const CategoryModel = require('../src/models/CategoryModel');
 
 const workspaceRoot = path.resolve(__dirname, '../..'); // /home/asjunior/docker
 
 async function runTests() {
-  console.log('=== TESTE DE INTEGRAÇÃO DOS MODELOS (GESTOR DE TOKENS IA v2.1.0) ===');
+  console.log('=== TESTE DE INTEGRAÇÃO DOS MODELOS (GESTOR DE TOKENS IA v2.2.0) ===');
   console.log('Workspace Root:', workspaceRoot);
 
   // 1. MCP Tool Indexer & Descrições
@@ -169,12 +168,6 @@ async function runTests() {
   for (const group of groupedSkills) {
     assert.ok(group.items.length > 0, `Categoria ${group.name} não deve estar vazia`);
   }
-
-  // 8. Quota Real-Time
-  console.log('\n[TESTE 11] QuotaModel (Tempo Real)');
-  const quota = await QuotaModel.getQuota();
-  console.log('Gemini 5h:', `${quota.gemini.fiveHour.remaining}%`, '| Weekly:', `${quota.gemini.weekly.remaining}%`);
-  assert.strictEqual(typeof quota.gemini.fiveHour.remaining, 'number');
 
   console.log('\n============================================================');
   console.log('✅ TODOS OS TESTES PASSARAM COM 100% DE SUCESSO E VALIDAÇÃO!');

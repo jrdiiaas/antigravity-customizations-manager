@@ -4,7 +4,6 @@ const SkillsModel = require('../models/SkillsModel');
 const AgentsModel = require('../models/AgentsModel');
 const RulesModel = require('../models/RulesModel');
 const ContextBudgetModel = require('../models/ContextBudgetModel');
-const QuotaModel = require('../models/QuotaModel');
 const McpToolIndexModel = require('../models/McpToolIndexModel');
 const CategoryModel = require('../models/CategoryModel');
 const WebviewHtml = require('../views/WebviewHtml');
@@ -15,7 +14,6 @@ class CustomizationWebviewController {
     this.workspaceRoot = workspaceRoot;
     this.globalState = globalState;
     this.view = null;
-    this.quotaRefreshInterval = null;
     this.fullRefreshInterval = null;
 
     this.mcpModel = new McpModel(this.workspaceRoot);
@@ -159,14 +157,7 @@ class CustomizationWebviewController {
   startAutoRefresh() {
     this.stopAutoRefresh();
 
-    // 1. Polling dedicado de Quota em tempo real a cada 1 segundo (leve, sem afetar performance)
-    this.quotaRefreshInterval = setInterval(() => {
-      if (this.view && this.view.visible) {
-        this.refreshQuota();
-      }
-    }, 1000);
-
-    // 2. Refresh completo de MCP, Skills, Regras e Agentes a cada 30 segundos
+    // Refresh completo de MCP, Skills, Regras e Agentes a cada 30 segundos
     this.fullRefreshInterval = setInterval(() => {
       if (this.view && this.view.visible) {
         this.refresh();
@@ -175,30 +166,9 @@ class CustomizationWebviewController {
   }
 
   stopAutoRefresh() {
-    if (this.quotaRefreshInterval) {
-      clearInterval(this.quotaRefreshInterval);
-      this.quotaRefreshInterval = null;
-    }
     if (this.fullRefreshInterval) {
       clearInterval(this.fullRefreshInterval);
       this.fullRefreshInterval = null;
-    }
-  }
-
-  /**
-   * Atualização instantânea e cirúrgica da cota de tokens (disparada a cada 1s).
-   */
-  async refreshQuota() {
-    if (!this.view || !this.view.visible) return;
-
-    try {
-      const quota = await QuotaModel.getQuota();
-      await this.view.webview.postMessage({
-        type: 'updateQuota',
-        quota
-      });
-    } catch (err) {
-      console.error('[CustomizationWebviewController] Erro no polling de quota:', err);
     }
   }
 
@@ -222,8 +192,6 @@ class CustomizationWebviewController {
       const agentCategories = this.categoryModel.groupItems(agents, 'agents');
       const availableCategories = this.categoryModel.getAllCategories();
 
-      const quota = await QuotaModel.getQuota();
-
       await this.view.webview.postMessage({
         type: 'updateData',
         mcpServers,
@@ -233,7 +201,6 @@ class CustomizationWebviewController {
         agentCategories,
         rules,
         stats,
-        quota,
         availableCategories
       });
     } catch (err) {

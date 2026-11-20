@@ -1,4 +1,4 @@
-// Script do cliente da Webview - Gestor de Tokens IA v2.1.0
+// Script do cliente da Webview - Gestor de Tokens IA v2.2.0
 (function () {
   const vscode = acquireVsCodeApi();
 
@@ -10,7 +10,6 @@
     agentCategories: [],
     rules: [],
     stats: null,
-    quota: null,
     availableCategories: [],
     searchQuery: '',
     openSections: {
@@ -195,17 +194,7 @@
         state.rules = message.rules || [];
         state.stats = message.stats || null;
         state.availableCategories = message.availableCategories || [];
-        if (message.quota) {
-          state.quota = message.quota;
-        }
         updateUI();
-        break;
-
-      case 'updateQuota':
-        if (message.quota) {
-          state.quota = message.quota;
-          renderQuota();
-        }
         break;
 
       case 'error':
@@ -216,64 +205,8 @@
 
   function updateUI() {
     renderStats();
-    renderQuota();
     renderSimulator();
     renderLists();
-  }
-
-  /**
-   * Renderiza os 4 indicadores oficiais de cota em tempo real (Gemini + Claude/GPT x Weekly + 5h)
-   */
-  function renderQuota() {
-    if (!state.quota || !state.quota.groups) return;
-
-    const updateBucket = (prefix, bucket) => {
-      const percentEl = document.getElementById(`quota-${prefix}-percentage`);
-      const ringEl = document.getElementById(`quota-${prefix}-ring`);
-      const descEl = document.getElementById(`quota-${prefix}-desc`);
-
-      if (!percentEl || !ringEl || !descEl) return;
-
-      if (!bucket) {
-        percentEl.textContent = '--%';
-        descEl.textContent = 'Métrica indisponível no momento.';
-        ringEl.setAttribute('stroke-dasharray', '0, 100');
-        ringEl.style.stroke = 'rgba(255, 255, 255, 0.15)';
-        return;
-      }
-
-      const percentage = bucket.percentage != null ? bucket.percentage : 0;
-      percentEl.textContent = `${percentage}%`;
-      descEl.textContent = bucket.description || (percentage >= 100 ? 'Seu limite está 100% disponível.' : '');
-
-      ringEl.setAttribute('stroke-dasharray', `${percentage}, 100`);
-
-      if (percentage > 50) {
-        ringEl.style.stroke = '#4ade80';
-      } else if (percentage > 15) {
-        ringEl.style.stroke = '#fbbf24';
-      } else {
-        ringEl.style.stroke = '#ef4444';
-      }
-    };
-
-    // Grupo 1: Gemini Models
-    const geminiGroup = state.quota.groups.find(g => g.id === 'gemini');
-    if (geminiGroup && geminiGroup.buckets) {
-      const weekly = geminiGroup.buckets.find(b => b.window === 'weekly' || (b.id && b.id.includes('weekly')));
-      const fiveHour = geminiGroup.buckets.find(b => b.window === '5h' || (b.id && b.id.includes('5h')));
-      updateBucket('gemini-weekly', weekly);
-      updateBucket('gemini-5h', fiveHour);
-    }
-
-    // Grupo 2: Claude and GPT models
-    const claudeGroup = state.quota.groups.find(g => g.id === 'claudegpt');
-    if (claudeGroup && claudeGroup.buckets) {
-      const weekly = claudeGroup.buckets.find(b => b.window === 'weekly' || (b.id && b.id.includes('weekly')));
-      const fiveHour = claudeGroup.buckets.find(b => b.window === '5h' || (b.id && b.id.includes('5h')));
-      updateBucket('claudegpt-weekly', weekly);
-      updateBucket('claudegpt-5h', fiveHour);
-    }
   }
 
   function renderStats() {

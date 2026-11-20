@@ -18,7 +18,6 @@ Quando você utiliza múltiplos servidores MCP (Brevo, Google Ads, Meta Ads, WAH
 Com o **Gestor de Tokens IA**, você ganha um painel dedicado na sua barra lateral para:
 
 * **⚡ Acesso em 1 Clique:** Ícone de raio na Activity Bar, sem precisar navegar por menus de configurações complexos.
-* **📈 Cota de Modelos em Tempo Real (Antigravity):** Espelho instantâneo (latência ≤ 1s) dos limites semanais e de 5 horas para modelos Gemini e Claude/GPT via RPC nativa do Language Server.
 * **📊 Orçamento de Tokens de Contexto:** Barra de progresso dinâmica que calcula o consumo total estimado de MCP, Skills, Agentes e Regras, prevenindo o truncamento de contexto.
 * **🔌 Controle de Servidores MCP:** Desative ferramentas de marketing ou APIs externas quando estiver focado em código, economizando até 15.000 tokens por turno de conversa.
 * **🧠 Gestão de Skills & Agentes:** Silencie pacotes de skills e agentes temporariamente de forma 100% segura e não destrutiva.
@@ -29,35 +28,28 @@ Com o **Gestor de Tokens IA**, você ganha um painel dedicado na sua barra later
 
 ## 📸 Demonstração Visual (Capturas de Tela Reais)
 
-### 1. Cota de Modelos em Tempo Real (Exclusivo Antigravity IDE)
-Espelho fidedigno da tela nativa de configurações de modelos do Antigravity. Exibe os 4 indicadores oficiais (Weekly Limit e Five Hour Limit para Gemini Models e Claude and GPT models) com porcentagens dinâmicas, anéis circulares de progresso SVG e frases oficiais de renovação de limites atualizadas a cada 1 segundo.
-
-![Cota de Modelos em Tempo Real](resources/screenshots/00-model-quota-realtime.png)
-
----
-
-### 2. Visão Geral do Painel & Medidor de Orçamento
-Acompanhe o consumo total em relação ao teto de 20.000 tokens de contexto, realize buscas rápidas e acesse botões de ação imediata logo abaixo das cotas de modelos.
+### 1. Visão Geral do Painel & Medidor de Orçamento
+Acompanhe o consumo total em relação ao teto de 20.000 tokens de contexto, realize buscas rápidas e acesse botões de ação imediata.
 
 ![Visão Geral do Orçamento de Tokens](resources/screenshots/01-painel-orcamento-tokens.png)
 
 ---
 
-### 3. Controle de Servidores MCP
+### 2. Controle de Servidores MCP
 Veja todos os servidores configurados com identificação de escopo (`GLOBAL` ou `LOCAL`) e comandos, podendo alterná-los com switches táteis suaves.
 
 ![Servidores MCP com Toggles](resources/screenshots/02-servidores-mcp.png)
 
 ---
 
-### 4. Gestão de Skills e Agentes Especialistas
+### 3. Gestão de Skills e Agentes Especialistas
 Ative apenas as skills e agentes relevantes para o momento da sua sessão de programação.
 
 ![Skills e Agentes com Toggles](resources/screenshots/03-skills-agentes.png)
 
 ---
 
-### 5. Alternador de Regras e Diretrizes
+### 4. Alternador de Regras e Diretrizes
 Controle quais regras do agente devem ser injetadas a cada requisição.
 
 ![Regras e Instruções](resources/screenshots/04-regras-instrucoes.png)
